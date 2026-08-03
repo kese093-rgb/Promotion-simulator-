@@ -101,48 +101,47 @@
 <body>
     <div id="app">
         <!-- ГЛАВНОЕ МЕНЮ -->
-        <div id="menu" class="screen active">
-            <div class="menu-container">
-                <div class="logo">PROMOTION<span>SIM</span></div>
-                <p class="subtitle">Онлайн симулятор <span id="online-count" class="online-badge">0 онлайн</span></p>
-                <div class="form-group"><label>Ваше имя</label><input type="text" id="player-name" placeholder="Введите имя" class="input"></div>
-                <button class="btn btn-primary btn-large" onclick="connectToServer()">🔌 Войти в игру</button>
-                <div style="margin-top:20px;">
-                    <button class="btn btn-blue btn-large" onclick="showCreator('fighter')">👤 Создать бойца</button>
-                    <button class="btn btn-blue btn-large" style="margin-top:5px;" onclick="showCreator('promotion')">🏢 Создать промоушн</button>
-                </div>
-                <div id="all-fighters-preview" style="margin-top:20px;text-align:left;"></div>
-            </div>
-        </div>
+<div id="menu" class="screen active">
+    <div class="menu-container">
+        <div class="logo">PROMOTION<span>SIM</span></div>
+        <p class="subtitle">Онлайн симулятор <span id="online-count" class="online-badge">0 онлайн</span></p>
+        
+        <button class="btn btn-primary btn-large" onclick="showCreator('fighter')">👤 Создать бойца</button>
+        <button class="btn btn-blue btn-large" style="margin-top:10px;" onclick="showCreator('promotion')">🏢 Создать промоушн</button>
+        
+        <div id="all-fighters-preview" style="margin-top:20px;text-align:left;"></div>
+    </div>
+</div>
 
-        <!-- СОЗДАНИЕ БОЙЦА -->
-        <div id="fighter-creator" class="screen">
-            <div class="creator-container">
-                <h2>👤 Создание бойца</h2>
-                <div class="form-group"><label>Имя</label><input type="text" id="f-name" class="input" placeholder="Введите имя"></div>
-                <div class="form-group"><label>Фамилия</label><input type="text" id="f-surname" class="input" placeholder="Введите фамилию"></div>
-                <div class="form-row">
-                    <div class="form-group"><label>Возраст</label><select id="f-age" class="input"><option value="20">20 лет</option><option value="21">21 год</option><option value="22">22 года</option><option value="23">23 года</option></select></div>
-                    <div class="form-group"><label>Страна</label><select id="f-country" class="input"><option>Россия</option><option>Дагестан</option><option>Армения</option><option>Украина</option><option>Грузия</option><option>Абхазия</option><option>Испания</option><option>Франция</option><option>Германия</option><option>Бразилия</option><option>Англия</option><option>США</option></select></div>
-                </div>
-                <div class="form-group"><label>Базовый стиль</label><select id="f-style" class="input"><option value="boxing">🥊 Бокс</option><option value="kickboxing">🦵 Кикбоксинг</option><option value="wrestling">🤼 Борьба</option></select></div>
-                <div id="preview-stats" style="background:var(--bg2);padding:12px;border-radius:8px;margin:12px 0;font-size:13px;"></div>
-                <button class="btn btn-primary btn-large" onclick="createMyFighter()">✅ Создать бойца</button>
-                <button class="btn btn-back" onclick="goToMenu()">← Назад</button>
-            </div>
+<!-- СОЗДАНИЕ БОЙЦА -->
+<div id="fighter-creator" class="screen">
+    <div class="creator-container">
+        <h2>👤 Создание бойца</h2>
+        <div class="form-group"><label>Имя</label><input type="text" id="f-name" class="input" placeholder="Введите имя"></div>
+        <div class="form-group"><label>Фамилия</label><input type="text" id="f-surname" class="input" placeholder="Введите фамилию"></div>
+        <div class="form-row">
+            <div class="form-group"><label>Возраст</label><select id="f-age" class="input"><option value="20">20 лет</option><option value="21">21 год</option><option value="22">22 года</option><option value="23">23 года</option></select></div>
+            <div class="form-group"><label>Страна</label><select id="f-country" class="input"><option>Россия</option><option>Дагестан</option><option>Армения</option><option>Украина</option><option>Грузия</option><option>Абхазия</option><option>Испания</option><option>Франция</option><option>Германия</option><option>Бразилия</option><option>Англия</option><option>США</option></select></div>
         </div>
+        <div class="form-group"><label>Базовый стиль</label><select id="f-style" class="input"><option value="boxing">🥊 Бокс</option><option value="kickboxing">🦵 Кикбоксинг</option><option value="wrestling">🤼 Борьба</option></select></div>
+        <div id="preview-stats" style="background:var(--bg2);padding:12px;border-radius:8px;margin:12px 0;font-size:13px;"></div>
+        <button class="btn btn-primary btn-large" onclick="createMyFighter()">✅ Создать бойца</button>
+        <button class="btn btn-back" onclick="goToMenu()">← Назад</button>
+    </div>
+</div>
 
-        <!-- СОЗДАНИЕ ПРОМОУШНА -->
-        <div id="promotion-creator" class="screen">
-            <div class="creator-container">
-                <h2>🏢 Создание промоушна</h2>
-                <div class="form-group"><label>Название</label><input type="text" id="promo-name" class="input" placeholder="Например: Absolute FC"></div>
-                <div class="form-group"><label>Вид спорта</label><select id="promo-sport" class="input"><option value="MMA">MMA</option><option value="BOXING">Бокс</option><option value="WRESTLING">Борьба</option></select></div>
-                <div class="form-group"><label>Страна</label><select id="promo-country" class="input"><option>Россия</option><option>США</option><option>Бразилия</option><option>Франция</option><option>Япония</option></select></div>
-                <button class="btn btn-blue btn-large" onclick="createMyPromotion()">✅ Создать промоушн</button>
-                <button class="btn btn-back" onclick="goToMenu()">← Назад</button>
-            </div>
-        </div>
+<!-- СОЗДАНИЕ ПРОМОУШНА -->
+<div id="promotion-creator" class="screen">
+    <div class="creator-container">
+        <h2>🏢 Создание промоушна</h2>
+        <div class="form-group"><label>Имя менеджера</label><input type="text" id="promo-manager-name" class="input" placeholder="Ваше имя"></div>
+        <div class="form-group"><label>Название промоушна</label><input type="text" id="promo-name" class="input" placeholder="Например: Absolute FC"></div>
+        <div class="form-group"><label>Вид спорта</label><select id="promo-sport" class="input"><option value="MMA">MMA</option><option value="BOXING">Бокс</option><option value="WRESTLING">Борьба</option></select></div>
+        <div class="form-group"><label>Страна</label><select id="promo-country" class="input"><option>Россия</option><option>США</option><option>Бразилия</option><option>Франция</option><option>Япония</option></select></div>
+        <button class="btn btn-blue btn-large" onclick="createMyPromotion()">✅ Создать промоушн</button>
+        <button class="btn btn-back" onclick="goToMenu()">← Назад</button>
+    </div>
+</div>
             <!-- ДАШБОРД -->
     <div id="dashboard" class="screen">
         <div class="dashboard">
@@ -436,10 +435,85 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ============================================
-// СОЗДАНИЕ БОЙЦА
+// ============================================
+// АВТОПОДКЛЮЧЕНИЕ К СЕРВЕРУ
+// ============================================
+function autoConnect(name) {
+    myPlayer = { name: name, id: null };
+    
+    if (socket && socket.connected) {
+        socket.emit('register', { name: name });
+        return;
+    }
+    
+    socket = io();
+    
+    socket.on('connect', function() {
+        socket.emit('register', { name: name });
+    });
+
+    socket.on('registered', function(data) {
+        myPlayer.id = data.id;
+        document.getElementById('sidebar-name').textContent = name;
+        document.getElementById('sidebar-info').textContent = 'Онлайн';
+        buildSidebarNav();
+        showScreen('dashboard');
+        showTab('overview');
+    });
+
+    socket.on('serverState', function(data) {
+        gameData.fighters = data.fighters || [];
+        gameData.promotions = data.promotions || [];
+        gameData.messages = data.messages || [];
+        gameData.notifications = data.notifications || [];
+        gameData.events = data.events || [];
+        gameData.onlineCount = data.onlineCount || 0;
+        updateOnlineCount();
+        renderAllFightersPreview();
+        renderChatMessages();
+        updateMailBadge();
+        if (document.getElementById('dashboard').classList.contains('active')) showTab(currentTab);
+    });
+
+    socket.on('playerJoined', function(data) {
+        gameData.onlineCount = data.onlineCount;
+        updateOnlineCount();
+        addChatMessage({ from: 'Система', text: data.message, system: true, time: new Date().toISOString() });
+    });
+
+    socket.on('playerLeft', function(data) {
+        gameData.onlineCount = data.onlineCount;
+        updateOnlineCount();
+        addChatMessage({ from: 'Система', text: data.message, system: true, time: new Date().toISOString() });
+    });
+
+    socket.on('newMessage', function(msg) { addChatMessage(msg); });
+
+    socket.on('fighterCreated', function(fighter) {
+        gameData.fighters.push(fighter);
+        if (document.getElementById('dashboard').classList.contains('active')) showTab(currentTab);
+        renderAllFightersPreview();
+    });
+
+    socket.on('promotionCreated', function(promo) {
+        gameData.promotions.push(promo);
+        if (document.getElementById('dashboard').classList.contains('active') && currentTab === 'promotions') showTab('promotions');
+    });
+
+    socket.on('notification', function(notif) {
+        gameData.notifications.unshift(notif);
+        updateMailBadge();
+    });
+
+    socket.on('disconnect', function() {
+        document.getElementById('sidebar-info').textContent = 'Отключено';
+    });
+}
+
+// ============================================
+// СОЗДАНИЕ БОЙЦА (с автоподключением)
 // ============================================
 function createMyFighter() {
-    if (!socket || !myPlayer) { alert('Сначала войдите в игру!'); return; }
     var name = document.getElementById('f-name').value.trim();
     var surname = document.getElementById('f-surname').value.trim();
     if (!name || !surname) { alert('Введите имя и фамилию!'); return; }
@@ -448,36 +522,58 @@ function createMyFighter() {
     var style = document.getElementById('f-style').value;
     var stats = getBaseStats(style, age);
 
-    socket.emit('createFighter', {
-        firstName: name, lastName: surname, age: age, country: country, baseStyle: style,
-        boxing: stats.boxing, wrestling: stats.wrestling, submission: stats.submission,
-        kick: stats.kick, speed: stats.speed, stamina: stats.stamina, strength: stats.strength
-    });
-    myMode = 'fighter';
-    buildSidebarNav();
-    showScreen('dashboard');
-    showTab('overview');
+    var playerName = name + ' ' + surname;
+    autoConnect(playerName);
+
+    setTimeout(function() {
+        if (!socket || !myPlayer || !myPlayer.id) {
+            alert('Не удалось подключиться к серверу. Попробуйте ещё раз.');
+            return;
+        }
+        socket.emit('createFighter', {
+            firstName: name, lastName: surname, age: age, country: country, baseStyle: style,
+            boxing: stats.boxing, wrestling: stats.wrestling, submission: stats.submission,
+            kick: stats.kick, speed: stats.speed, stamina: stats.stamina, strength: stats.strength
+        });
+        myMode = 'fighter';
+        buildSidebarNav();
+        showScreen('dashboard');
+        showTab('overview');
+    }, 500);
 }
 
 // ============================================
-// СОЗДАНИЕ ПРОМОУШНА
+// СОЗДАНИЕ ПРОМОУШНА (с автоподключением)
 // ============================================
 function createMyPromotion() {
-    if (!socket || !myPlayer) { alert('Сначала войдите в игру!'); return; }
-    var name = document.getElementById('promo-name').value.trim();
-    if (!name) { alert('Введите название!'); return; }
+    var managerName = document.getElementById('promo-manager-name').value.trim();
+    var promoName = document.getElementById('promo-name').value.trim();
+    if (!managerName) { alert('Введите имя менеджера!'); return; }
+    if (!promoName) { alert('Введите название промоушна!'); return; }
     var sport = document.getElementById('promo-sport').value;
     var country = document.getElementById('promo-country').value;
 
-    socket.emit('createPromotion', {
-        name: name, sport: sport, country: country, budget: 2000, popularity: 30
-    });
-    myMode = 'promoter';
-    buildSidebarNav();
-    showScreen('dashboard');
-    showTab('overview');
+    autoConnect(managerName);
+
+    setTimeout(function() {
+        if (!socket || !myPlayer || !myPlayer.id) {
+            alert('Не удалось подключиться к серверу. Попробуйте ещё раз.');
+            return;
+        }
+        socket.emit('createPromotion', {
+            name: promoName, sport: sport, country: country, budget: 2000, popularity: 30
+        });
+        myMode = 'promoter';
+        buildSidebarNav();
+        showScreen('dashboard');
+        showTab('overview');
+    }, 500);
 }
 
+// Убираем старую connectToServer() — она больше не нужна
+function connectToServer() {
+    // Больше не используется
+            }
 // ============================================
 // ПОИСК МОЕГО БОЙЦА
 // ============================================
