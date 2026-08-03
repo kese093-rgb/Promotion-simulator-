@@ -51,18 +51,20 @@ body {
     font-size: 16px;
 }
 
+/* КНОПКИ — УВЕЛИЧЕНА ВЫСОТА */
 .btn {
     display: block;
     width: 100%;
-    padding: 18px;
+    padding: 22px 20px;
     border: 2px solid var(--border);
     border-radius: 14px;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
     cursor: pointer;
     background: var(--bg);
-    margin-bottom: 12px;
+    margin-bottom: 14px;
     -webkit-tap-highlight-color: transparent;
+    min-height: 60px;
 }
 .btn:active {
     opacity: 0.7;
@@ -96,13 +98,15 @@ body {
     border: none;
     color: var(--text2);
     font-size: 16px;
-    padding: 10px 0;
+    padding: 12px 0;
+    min-height: auto;
 }
 .btn-small {
     display: inline-block;
     width: auto;
-    padding: 10px 16px;
-    font-size: 15px;
+    padding: 12px 18px;
+    font-size: 16px;
+    min-height: auto;
 }
 
 .creator-container {
@@ -113,7 +117,7 @@ body {
     margin-bottom: 20px;
 }
 .form-group {
-    margin-bottom: 16px;
+    margin-bottom: 18px;
 }
 .form-group label {
     font-size: 14px;
@@ -123,13 +127,15 @@ body {
     margin-bottom: 6px;
     display: block;
 }
+/* ПОЛЯ ВВОДА — УВЕЛИЧЕНА ВЫСОТА */
 .input, select {
     width: 100%;
-    padding: 16px;
+    padding: 18px 16px;
     border: 2px solid var(--border);
     border-radius: 12px;
     font-size: 18px;
     background: var(--bg);
+    min-height: 56px;
 }
 
 .dashboard {
@@ -139,7 +145,7 @@ body {
 }
 .sidebar {
     background: var(--bg2);
-    padding: 10px;
+    padding: 12px;
     border-bottom: 2px solid var(--border);
 }
 .main-content {
@@ -149,7 +155,7 @@ body {
 .chat-panel {
     display: none;
     background: var(--bg2);
-    padding: 10px;
+    padding: 12px;
 }
 .chat-panel.mobile-open {
     display: flex;
@@ -164,17 +170,19 @@ body {
     border-radius: 20px 20px 0 0;
 }
 
+/* НАВИГАЦИЯ — КРУПНЫЕ КНОПКИ */
 .nav-btn {
     display: inline-block;
     width: auto;
-    padding: 12px 16px;
-    font-size: 16px;
+    padding: 14px 18px;
+    font-size: 17px;
     font-weight: 600;
     background: var(--bg);
     border: 2px solid var(--border);
-    border-radius: 10px;
-    margin: 4px;
+    border-radius: 12px;
+    margin: 5px;
     color: var(--text);
+    min-height: 50px;
 }
 .nav-btn.active {
     background: var(--text);
@@ -183,11 +191,11 @@ body {
 }
 
 .card-mini {
-    padding: 15px;
+    padding: 18px;
     background: var(--bg);
     border-radius: 12px;
     border: 2px solid var(--border);
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     text-align: center;
     font-size: 16px;
 }
@@ -195,33 +203,33 @@ body {
 .stat-grid {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
 }
 .stat-card {
-    padding: 16px;
+    padding: 18px;
     background: var(--bg);
     border: 2px solid var(--border);
     border-radius: 12px;
 }
 .stat-card h3 {
-    font-size: 13px;
+    font-size: 14px;
     color: var(--text2);
     text-transform: uppercase;
 }
 .stat-value {
-    font-size: 28px;
+    font-size: 30px;
     font-weight: 800;
-    margin: 6px 0;
+    margin: 8px 0;
 }
 .stat-bar {
-    height: 6px;
+    height: 8px;
     background: var(--bg2);
-    border-radius: 3px;
-    margin-top: 6px;
+    border-radius: 4px;
+    margin-top: 8px;
 }
 .stat-bar-fill {
     height: 100%;
-    border-radius: 3px;
+    border-radius: 4px;
 }
 .bar-energy { background: var(--blue); }
 .bar-prime { background: var(--gold); }
@@ -234,15 +242,15 @@ body {
 }
 .data-table th {
     background: var(--bg2);
-    padding: 12px 8px;
+    padding: 14px 10px;
     text-align: left;
-    font-size: 12px;
+    font-size: 13px;
     text-transform: uppercase;
     color: var(--text2);
     border-bottom: 2px solid var(--border);
 }
 .data-table td {
-    padding: 12px 8px;
+    padding: 14px 10px;
     border-bottom: 1px solid var(--border);
 }
 
@@ -252,9 +260,9 @@ body {
     margin-bottom: 10px;
 }
 .chat-msg {
-    padding: 8px 0;
+    padding: 10px 0;
     border-bottom: 1px solid var(--border);
-    font-size: 15px;
+    font-size: 16px;
 }
 .chat-msg .name {
     font-weight: 700;
@@ -269,38 +277,39 @@ body {
 }
 .chat-input {
     flex: 1;
-    padding: 14px;
+    padding: 16px;
     border: 2px solid var(--border);
     border-radius: 12px;
     font-size: 16px;
     background: var(--bg);
+    min-height: 52px;
 }
 
 .online-badge {
     display: inline-block;
     background: var(--green);
     color: white;
-    padding: 4px 12px;
-    border-radius: 16px;
+    padding: 6px 14px;
+    border-radius: 18px;
     font-size: 14px;
 }
 .badge {
     display: inline-block;
-    padding: 4px 10px;
+    padding: 5px 12px;
     border-radius: 6px;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
 }
 .badge-green { background: #e6f4ec; color: var(--green); }
 .badge-red { background: #fde8e8; color: var(--red); }
 
 .notification {
-    padding: 14px;
+    padding: 16px;
     background: var(--bg2);
     border-left: 5px solid var(--blue);
-    margin: 8px 0;
+    margin: 10px 0;
     border-radius: 0 10px 10px 0;
-    font-size: 15px;
+    font-size: 16px;
 }
 .notification.unread {
     border-left-color: var(--red);
@@ -310,15 +319,15 @@ body {
 .fight-log {
     background: var(--bg2);
     border-radius: 10px;
-    padding: 14px;
-    margin: 10px 0;
+    padding: 16px;
+    margin: 12px 0;
     font-size: 16px;
     max-height: 45vh;
     overflow-y: auto;
 }
 .fight-log p {
-    margin: 6px 0;
-    padding: 6px 0;
+    margin: 8px 0;
+    padding: 8px 0;
     border-bottom: 1px solid var(--border);
 }
 
@@ -329,15 +338,16 @@ body {
     z-index: 200;
     background: var(--blue);
     color: white;
-    border-radius: 40px;
-    padding: 16px 22px;
+    border-radius: 50px;
+    padding: 18px 24px;
     font-size: 18px;
     font-weight: 700;
     box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    min-height: 60px;
 }
 
 #sidebar-nav {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    }
+    gap: 8px;
+        }
