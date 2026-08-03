@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Promotion Simulator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0a0a; color: #e0e0e0; min-height: 100vh; }
+        .screen { display: none; min-height: 100vh; }
+        .screen.active { display: flex; flex-direction: column; }
+        .menu-container { max-width: 900px; margin: 60px auto; padding: 30px; text-align: center; width: 100%; }
+        .game-title { font-size: 48px; font-weight: 900; background: linear-gradient(135deg, #E31E24, #F59E0B); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 8px; }
+        .subtitle { color: #999; font-size: 16px; margin-bottom: 40px; }
+        .save-slots { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 30px; }
+        .slot-card { background: #1a1a2e; border: 2px solid #2d2d4a; border-radius: 14px; padding: 30px; cursor: pointer; transition: all 0.3s; }
+        .slot-card:hover { border-color: #E31E24; transform: translateY(-3px); box-shadow: 0 8px 25px rgba(227,30,36,0.2); }
+        .slot-icon { font-size: 40px; margin-bottom: 15px; }
+        .slot-card h3 { font-size: 20px; margin-bottom: 8px; }
+        .slot-card p { color: #999; margin-bottom: 15px; font-size: 14px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: #E31E24; color: white; }
+        .btn-primary:hover { background: #c41920; }
+        .btn-secondary { background: #3B82F6; color: white; }
+        .btn-secondary:hover { background: #2563eb; }
+        .btn-back { background: transparent; border: 2px solid #2d2d4a; color: #999; width: 100%; margin-top: 15px; }
+        .btn-back:hover { background: #1a1a2e; color: #fff; }
+        .btn-large { width: 100%; padding: 14px; font-size: 17px; margin-top: 20px; }
+        .btn-small { padding: 6px 14px; font-size: 13px; }
+        .btn-gold { background: #F59E0B; color: #000; }
+        .btn-gold:hover { background: #d98a0a; }
+        .btn-green { background: #10B981; color: white; }
+        .btn-green:hover { background: #0d9e6e; }
+        .creator-container { max-width: 650px; margin: 30px auto; padding: 30px; background: #1a1a2e; border-radius: 14px; border: 2px solid #2d2d4a; width: 95%; }
+        .creator-container h2 { font-size: 26px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 500; color: #999; font-size: 14px; }
+        .input { width: 100%; padding: 10px; background: #0a0a0a; border: 2px solid #2d2d4a; border-radius: 8px; color: #e0e0e0; font-size: 15px; }
+        .input:focus { outline: none; border-color: #E31E24; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .dashboard { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; width: 100%; }
+        .sidebar { background: #1a1a2e; padding: 20px; border-right: 2px solid #2d2d4a; }
+        .main-content { padding: 25px; overflow-y: auto; }
+        .card-mini { padding: 15px; background: #0a0a0a; border-radius: 10px; margin-bottom: 15px; text-align: center; border: 1px solid #2d2d4a; }
+        .dashboard-nav { display: flex; flex-direction: column; gap: 4px; }
+        .nav-btn { width: 100%; padding: 10px; text-align: left; background: transparent; border: none; color: #999; font-size: 15px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+        .nav-btn:hover { background: #2d2d4a; color: #fff; }
+        .nav-btn.active { background: #E31E24; color: white; }
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; margin-top: 20px; }
+        .stat-card { background: #1a1a2e; padding: 18px; border-radius: 10px; border: 1px solid #2d2d4a; }
+        .stat-card h3 { font-size: 12px; color: #999; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px; }
+        .stat-value { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+        .stat-bar { height: 6px; background: #0a0a0a; border-radius: 3px; overflow: hidden; }
+        .stat-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+        .bar-health { background: #10B981; }
+        .bar-energy { background: #3B82F6; }
+        .bar-prime { background: #F59E0B; }
+        .bar-hype { background: #E31E24; }
+        .data-table { width: 100%; background: #1a1a2e; border-radius: 10px; overflow: hidden; border-collapse: collapse; }
+        .data-table th { background: #0a0a0a; padding: 12px; text-align: left; font-weight: 600; color: #999; font-size: 13px; }
+        .data-table td { padding: 12px; border-top: 1px solid #2d2d4a; font-size: 14px; }
+        .data-table tr:hover { background: rgba(255,255,255,0.02); cursor: pointer; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal { background: #1a1a2e; border-radius: 14px; padding: 30px; max-width: 500px; width: 90%; border: 2px solid #2d2d4a; }
+        .modal h3 { margin-bottom: 15px; font-size: 20px; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-green { background: #10B981; color: #000; }
+        .badge-red { background: #E31E24; color: #fff; }
+        .badge-gold { background: #F59E0B; color: #000; }
+        .badge-blue { background: #3B82F6; color: #fff; }
+        .fight-commentary { background: #0a0a0a; border: 1px solid #2d2d4a; border-radius: 10px; padding: 15px; margin: 10px 0; font-style: italic; color: #ccc; max-height: 300px; overflow-y: auto; }
+        .notification { position: fixed; top: 20px; right: 20px; background: #F59E0B; color: #000; padding: 15px 20px; border-radius: 10px; font-weight: 600; z-index: 2000; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @media (max-width: 768px) { .dashboard { grid-template-columns: 1fr; } .save-slots { grid-template-columns: 1fr; } .form-row { grid-template-columns: 1fr; } .game-title { font-size: 32px; } }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Главное меню -->
+        <div id="main-menu" class="screen active">
+            <div class="menu-container">
+                <h1 class="game-title">🥊 Promotion Simulator</h1>
+                <p class="subtitle">Реалистичный симулятор бойца и менеджера промоушна</p>
+                <div class="save-slots">
+                    <div class="slot-card">
+                        <div class="slot-icon">👤</div>
+                        <h3>Слот 1: Карьера бойца</h3>
+                        <p>Создайте бойца и пройдите путь к славе</p>
+                        <button class="btn btn-primary" onclick="startCareer()">Начать карьеру</button>
+                    </div>
+                    <div class="slot-card">
+                        <div class="slot-icon">🏢</div>
+                        <h3>Слот 2: Менеджер промоушна</h3>
+                        <p>Управляйте промоушном, подписывайте бойцов</p>
+                        <button class="btn btn-secondary" onclick="startPromoter()">Стать менеджером</button>
+                    </div>
+                </div>
+                <div id="load-section" class="save-slots" style="margin-top:20px; display:none;">
+                    <div class="slot-card" style="grid-column: span 2;">
+                        <h3>📂 Загрузить сохранение</h3>
+                        <div id="saves-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Создание бойца -->
+        <div id="fighter-creator" class="screen">
+            <div class="creator-container">
+                <h2>👤 Создание бойца</h2>
+                <div class="form-group"><label>Имя</label><input type="text" id="f-name" placeholder="Введите имя" class="input"></div>
+                <div class="form-group"><label>Фамилия</label><input type="text" id="f-surname" placeholder="Введите фамилию" class="input"></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Возраст</label><select id="f-age" class="input"><option value="20">20 лет</option><option value="21">21 год</option><option value="22">22 года</option><option value="23">23 года</option></select></div>
+                    <div class="form-group"><label>Страна</label><select id="f-country" class="input"><option value="Россия">🇷🇺 Россия</option><option value="Дагестан">🇷🇺 Дагестан</option><option value="Армения">🇦🇲 Армения</option><option value="Украина">🇺🇦 Украина</option><option value="Грузия">🇬🇪 Грузия</option><option value="Абхазия">🇬🇪 Абхазия</option><option value="Испания">🇪🇸 Испания</option><option value="Франция">🇫🇷 Франция</option><option value="Германия">🇩🇪 Германия</option><option value="Бразилия">🇧🇷 Бразилия</option><option value="Англия">🇬🇧 Англия</option></select></div>
+                </div>
+                <div class="form-group"><label>Базовый стиль</label><select id="f-style" class="input"><option value="boxing">🥊 Бокс</option><option value="kickboxing">🦵 Кикбоксинг</option><option value="wrestling">🤼 Борьба</option></select></div>
+                <div id="preview-stats" style="background:#0a0a0a;padding:15px;border-radius:10px;margin:15px 0;"></div>
+                <button class="btn btn-primary btn-large" onclick="createFighter()">✅ Создать бойца</button>
+                <button class="btn btn-back" onclick="goToMainMenu()">← Вернуться в меню</button>
+            </div>
+        </div>
+
+        <!-- Дашборд бойца -->
+        <div id="career-dashboard" class="screen">
+            <div class="dashboard">
+                <div class="sidebar">
+                    <div class="card-mini" id="fighter-card-mini"></div>
+                    <nav class="dashboard-nav">
+                        <button class="nav-btn active" onclick="showCareerTab(event,'overview')">📊 Обзор</button>
+                        <button class="nav-btn" onclick="showCareerTab(event,'training')">🏋️ Тренировки</button>
+                        <button class="nav-btn" onclick="showCareerTab(event,'fights')">🥊 Бои</button>
+                        <button class="nav-btn" onclick="showCareerTab(event,'contracts')">📋 Контракты</button>
+                        <button class="nav-btn" onclick="showCareerTab(event,'shop')">🛒 Магазин</button>
+                        <button class="nav-btn" onclick="showCareerTab(event,'rankings')">🏆 Рейтинги</button>
+                    </nav>
+                    <button class="btn btn-back" onclick="goToMainMenu()">← В меню</button>
+                </div>
+                <div class="main-content" id="career-content"></div>
+            </div>
+        </div>
+
+        <!-- Дашборд промоутера -->
+        <div id="promotion-dashboard" class="screen">
+            <div class="dashboard">
+                <div class="sidebar">
+                    <div class="card-mini" id="promo-card-mini"></div>
+                    <nav class="dashboard-nav">
+                        <button class="nav-btn active" onclick="showPromoterTab(event,'overview')">📊 Обзор</button>
+                        <button class="nav-btn" onclick="showPromoterTab(event,'roster')">👥 Все бойцы</button>
+                        <button class="nav-btn" onclick="showPromoterTab(event,'events')">📅 Карды</button>
+                        <button class="nav-btn" onclick="showPromoterTab(event,'finances')">💰 Финансы</button>
+                    </nav>
+                    <button class="btn btn-back" onclick="goToMainMenu()">← В меню</button>
+                </div>
+                <div class="main-content" id="promotion-content"></div>
+            </div>
+        </div>
+  </div>
+  <script>
+    // ============================================
+    // PROMOTION SIMULATOR v2.0
+    // ============================================
+    var GameState = {
+        mode: null,
+        player: null,
+        promotions: [],
+        fighters: [],
+        currentDate: new Date('2024-01-01'),
+        events: [],
+        saveSlots: {},
+        notifications: [],
+        lastTrainingTime: {}
+    };
+
+    function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+    function generateId() { return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
+
+    // Навигация
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+        var el = document.getElementById(id);
+        if (el) el.classList.add('active');
+    }
+
+    function goToMainMenu() {
+        GameState.mode = null;
+        GameState.player = null;
+        showScreen('main-menu');
+        updateLoadSection();
+    }
+
+    // Сохранения
+    function saveGame() {
+        var key = 'ps_' + GameState.mode;
+        var data = {
+            mode: GameState.mode,
+            player: GameState.player,
+            promotions: GameState.promotions,
+            fighters: GameState.fighters,
+            currentDate: GameState.currentDate.toISOString(),
+            events: GameState.events,
+            lastTrainingTime: GameState.lastTrainingTime,
+            timestamp: Date.now()
+        };
+        localStorage.setItem(key, JSON.stringify(data));
+        GameState.saveSlots[key] = data;
+        updateLoadSection();
+    }
+
+    function loadGame(mode) {
+        var key = 'ps_' + mode;
+        var data = localStorage.getItem(key);
+        if (data) {
+            var s = JSON.parse(data);
+            GameState.mode = s.mode;
+            GameState.player = s.player;
+            GameState.promotions = s.promotions || [];
+            GameState.fighters = s.fighters || [];
+            GameState.currentDate = new Date(s.currentDate);
+            GameState.events = s.events || [];
+            GameState.lastTrainingTime = s.lastTrainingTime || {};
+            return true;
+        }
+        return false;
+    }
+
+    function loadAllSaves() {
+        ['career', 'promotion'].forEach(function(m) {
+            var d = localStorage.getItem('ps_' + m);
+            if (d) GameState.saveSlots['ps_' + m] = JSON.parse(d);
+        });
+    }
+
+    function updateLoadSection() {
+        var ls = document.getElementById('load-section');
+        var sl = document.getElementById('saves-list');
+        if (!ls || !sl) return;
+        var keys = Object.keys(GameState.saveSlots);
+        if (keys.length > 0) {
+            ls.style.display = 'block';
+            var h = '';
+            keys.forEach(function(k) {
+                var s = GameState.saveSlots[k];
+                var n = s.mode === 'career' ? 'Карьера бойца' : 'Менеджер';
+                var pn = s.player ? (s.player.fullName || s.player.name || '?') : '?';
+                var d = new Date(s.timestamp).toLocaleString('ru');
+                h += '<div class="save-item" style="padding:10px;margin:5px 0;background:#0a0a0a;border-radius:8px;cursor:pointer;" onclick="loadAndStart(\'' + s.mode + '\')"><strong>' + n + '</strong> - ' + pn + '<br><span style="color:#999;font-size:12px;">' + d + '</span></div>';
+            });
+            sl.innerHTML = h;
+        }
+    }
+
+    function loadAndStart(mode) {
+        if (loadGame(mode)) {
+            if (mode === 'career') { showScreen('career-dashboard'); updateFighterDash(); showCareerTabContent('overview'); }
+            else { showScreen('promotion-dashboard'); updatePromoDash(); showPromoterTabContent('overview'); }
+        }
+    }
+
+    // ============================================
+    // НАВЫКИ ПО СТИЛЮ И ВОЗРАСТУ
+    // ============================================
+    function getBaseStats(style, age) {
+        var s = { boxing: 0, wrestling: 0, submission: 0, kick: 0, speed: 0, stamina: 0, strength: 0 };
+        if (style === 'boxing') {
+            if (age <= 23) { s.boxing = 6; s.wrestling = 1; s.submission = 1; s.kick = 1; s.speed = 6; s.stamina = 6; s.strength = 5; }
+            else { s.boxing = 10; s.wrestling = 1; s.submission = 1; s.kick = 1; s.speed = 10; s.stamina = 10; s.strength = 5; }
+        } else if (style === 'wrestling') {
+            if (age <= 23) { s.boxing = 1; s.wrestling = 6; s.submission = 6; s.kick = 1; s.speed = 5; s.stamina = 6; s.strength = 6; }
+            else { s.boxing = 1; s.wrestling = 10; s.submission = 10; s.kick = 1; s.speed = 5; s.stamina = 10; s.strength = 10; }
+        } else if (style === 'kickboxing') {
+            if (age <= 23) { s.boxing = 5; s.wrestling = 1; s.submission = 1; s.kick = 7; s.speed = 5; s.stamina = 5; s.strength = 5; }
+            else { s.boxing = 6; s.wrestling = 1; s.submission = 1; s.kick = 10; s.speed = 10; s.stamina = 6; s.strength = 6; }
+        }
+        return s;
+    }
+
+    // ============================================
+    // СОЗДАНИЕ БОЙЦА
+    // ============================================
+    function startCareer() { showScreen('fighter-creator'); updatePreviewStats(); }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        var styleSel = document.getElementById('f-style');
+        var ageSel = document.getElementById('f-age');
+        if (styleSel) styleSel.addEventListener('change', updatePreviewStats);
+        if (ageSel) ageSel.addEventListener('change', updatePreviewStats);
+    });
+
+    function updatePreviewStats() {
+        var style = document.getElementById('f-style') ? document.getElementById('f-style').value : 'boxing';
+        var age = parseInt(document.getElementById('f-age') ? document.getElementById('f-age').value : 20);
+        var s = getBaseStats(style, age);
+        var pv = document.getElementById('preview-stats');
+        if (pv) {
+            pv.innerHTML = '<strong>Навыки:</strong> Бокс: ' + s.boxing + ' | Борьба: ' + s.wrestling + ' | Самбишн: ' + s.submission + ' | Удар ногой: ' + s.kick + ' | Скорость: ' + s.speed + ' | Выносливость: ' + s.stamina + ' | Сила: ' + s.strength;
+        }
+    }
+
+    function createFighter() {
+        var name = document.getElementById('f-name').value || 'Боец';
+        var surname = document.getElementById('f-surname').value || 'Новый';
+        var age = parseInt(document.getElementById('f-age').value) || 20;
+        var country = document.getElementById('f-country').value || 'Россия';
+        var style = document.getElementById('f-style').value || 'boxing';
+        var stats = getBaseStats(style, age);
+        
+        var fighter = {
+            id: generateId(),
+            firstName: name, lastName: surname, fullName: name + ' ' + surname,
+            age: age, country: country, baseStyle: style,
+            boxing: stats.boxing, wrestling: stats.wrestling, submission: stats.submission,
+            kick: stats.kick, speed: stats.speed, stamina: stats.stamina, strength: stats.strength,
+            energy: 100, maxEnergy: 100,
+            prime: 0, maxPrime: 100,
+            hype: 0, maxHype: 100,
+            coins: 0,
+            nickname: '',
+            records: { MMA: { wins: 0, losses: 0, draws: 0, ko: 0 }, BOXING: { wins: 0, losses: 0, draws: 0, ko: 0 }, WRESTLING: { wins: 0, losses: 0, draws: 0 } },
+            contracts: [],
+            injuries: [],
+            retired: false,
+            tactic: 'balance'
+        };
+        
+        GameState.fighters.push(fighter);
+        GameState.player = fighter;
+        GameState.mode = 'career';
+        GameState.lastTrainingTime[fighter.id] = {};
+        saveGame();
+        showScreen('career-dashboard');
+        updateFighterDash();
+        showCareerTabContent('overview');
+    }
+
+    // ============================================
+    // ГЕНЕРАЦИЯ МИРА
+    // ============================================
+    var FIRST_NAMES = ['Хабиб', 'Ислам', 'Конор', 'Джон', 'Алекс', 'Макс', 'Дастин', 'Тони', 'Хорхе', 'Камару', 'Исраэль', 'Роберт', 'Шон', 'Петр', 'Александр'];
+    var LAST_NAMES = ['Нурмагомедов', 'Махачев', 'Макгрегор', 'Джонс', 'Волкановски', 'Холлоуэй', 'Порье', 'Фергюсон', 'Масвидаль', 'Усман', 'Адесанья', 'Уиттакер', 'О\'Мэлли', 'Ян', 'Волков'];
+    var COUNTRIES = ['Россия', 'Дагестан', 'Армения', 'Украина', 'Грузия', 'Абхазия', 'Испания', 'Франция', 'Германия', 'Бразилия', 'Англия'];
+    var STYLES = ['boxing', 'wrestling', 'kickboxing'];
+
+    function generateFighter() {
+        var age = randomInt(20, 35);
+        var style = STYLES[randomInt(0, 2)];
+        var stats = getBaseStats(style, age);
+        return {
+            id: generateId(),
+            firstName: FIRST_NAMES[randomInt(0, FIRST_NAMES.length - 1)],
+            lastName: LAST_NAMES[randomInt(0, LAST_NAMES.length - 1)],
+            fullName: '',
+            age: age, country: COUNTRIES[randomInt(0, COUNTRIES.length - 1)], baseStyle: style,
+            boxing: stats.boxing + randomInt(-2, 5), wrestling: stats.wrestling + randomInt(-2, 5),
+            submission: stats.submission + randomInt(-2, 5), kick: stats.kick + randomInt(-2, 5),
+            speed: stats.speed + randomInt(-2, 5), stamina: stats.stamina + randomInt(-2, 5),
+            strength: stats.strength + randomInt(-2, 5),
+            energy: 100, maxEnergy: 100, prime: randomInt(0, 50), maxPrime: 100,
+            hype: randomInt(0, 60), maxHype: 100, coins: randomInt(0, 500),
+            nickname: '', records: { MMA: { wins: randomInt(0, 15), losses: randomInt(0, 5), draws: 0, ko: randomInt(0, 8) }, BOXING: { wins: 0, losses: 0, draws: 0, ko: 0 }, WRESTLING: { wins: 0, losses: 0, draws: 0 } },
+            contracts: [], injuries: [], retired: false, tactic: 'balance'
+        };
+    }
+
+    function generateWorld() {
+        if (GameState.fighters.length < 40) {
+            for (var i = 0; i < 40; i++) {
+                var f = generateFighter();
+                f.fullName = f.firstName + ' ' + f.lastName;
+                GameState.fighters.push(f);
+            }
+        }
+        if (GameState.promotions.length === 0) {
+            GameState.promotions.push({
+                id: generateId(), name: 'UFA', country: 'Россия', budget: 2000, revenue: 0, expenses: 0,
+                popularity: 50, roster: [], events: []
+            });
+        }
+    }
+    // ============================================
+// ДАШБОРД БОЙЦА
+// ============================================
+function updateFighterDash() {
+    var f = GameState.player;
+    if (!f) return;
+    var card = document.getElementById('fighter-card-mini');
+    if (card) card.innerHTML = '<div style="font-size:40px;">👤</div><h3>' + f.fullName + (f.nickname ? ' "' + f.nickname + '"' : '') + '</h3><p style="color:#999;">' + f.country + ' | ' + f.age + ' лет | ' + f.baseStyle + '</p><p>🪙 ' + f.coins + ' | ⚡ ' + f.energy + '/' + f.maxEnergy + '</p>';
+}
+
+function showCareerTab(e, tab) {
+    document.querySelectorAll('#career-dashboard .nav-btn').forEach(function(b) { b.classList.remove('active'); });
+    e.target.classList.add('active');
+    showCareerTabContent(tab);
+}
+
+function showCareerTabContent(tab) {
+    var c = document.getElementById('career-content');
+    var f = GameState.player;
+    if (!c || !f) return;
+
+    if (tab === 'overview') {
+        c.innerHTML = '<h2>📊 Обзор</h2>' +
+            '<div class="stat-grid">' +
+            statCard('⚡ Энергия', f.energy + '/' + f.maxEnergy, 'bar-energy', f.energy / f.maxEnergy * 100) +
+            statCard('🔥 Прайм', f.prime + '/' + f.maxPrime, 'bar-prime', f.prime / f.maxPrime * 100) +
+            statCard('📢 Хайп', f.hype + '/' + f.maxHype, 'bar-hype', f.hype / f.maxHype * 100) +
+            statCard('🪙 Монеты', f.coins, '', 0) +
+            '</div>' +
+            '<h3 style="margin-top:20px;">🥊 Навыки</h3>' +
+            '<div class="stat-grid">' +
+            skillCard('Бокс', f.boxing) + skillCard('Борьба', f.wrestling) + skillCard('Самбишн', f.submission) +
+            skillCard('Удар ногой', f.kick) + skillCard('Скорость', f.speed) + skillCard('Выносливость', f.stamina) + skillCard('Сила', f.strength) +
+            '</div>' +
+            '<h3 style="margin-top:20px;">🏆 Рекорд MMA</h3>' +
+            '<div class="stat-card"><div class="stat-value" style="font-size:22px;">' + f.records.MMA.wins + 'W - ' + f.records.MMA.losses + 'L - ' + f.records.MMA.ko + 'KO</div></div>' +
+            '<button class="btn btn-primary btn-large" onclick="showCareerTabContent(\'fights\'); document.querySelectorAll(\'#career-dashboard .nav-btn\')[2].classList.add(\'active\');">🥊 Перейти к боям</button>';
+    } else if (tab === 'training') {
+        var now = Date.now();
+        var lt = GameState.lastTrainingTime[f.id] || {};
+        var skills = ['boxing', 'wrestling', 'submission', 'kick', 'speed', 'stamina', 'strength'];
+        var names = ['Бокс', 'Борьба', 'Самбишн', 'Удар ногой', 'Скорость', 'Выносливость', 'Сила'];
+        var html = '<h2>🏋️ Тренировки</h2><p style="color:#999;">Энергия: ' + f.energy + '/' + f.maxEnergy + ' | Одна тренировка = -10 энергии</p><p style="color:#999;">Можно тренировать 1 навык раз в 2 часа</p><div class="stat-grid">';
+        for (var i = 0; i < skills.length; i++) {
+            var canTrain = true;
+            if (lt[skills[i]] && (now - lt[skills[i]] < 2 * 60 * 60 * 1000)) {
+                var remaining = Math.ceil((2 * 60 * 60 * 1000 - (now - lt[skills[i]])) / 60000);
+                canTrain = false;
+            }
+            var disabled = !canTrain || f.energy < 10 ? 'disabled style="opacity:0.5;"' : '';
+            var info = !canTrain ? '<br><span style="color:#F59E0B;font-size:11px;">Доступно через ' + remaining + ' мин</span>' : '';
+            html += '<div class="stat-card"><h3>' + names[i] + '</h3><div class="stat-value">' + f[skills[i]] + '</div>' + info + '<button class="btn btn-primary btn-small" ' + disabled + ' onclick="trainSkill(\'' + skills[i] + '\')">Тренировать</button></div>';
+        }
+        html += '</div>';
+        c.innerHTML = html;
+    } else if (tab === 'shop') {
+        c.innerHTML = '<h2>🛒 Магазин</h2><p style="color:#999;">Ваши монеты: 🪙 ' + f.coins + '</p>' +
+            '<div class="stat-grid">' +
+            '<div class="stat-card"><h3>Прозвище</h3><p>Купить крутое прозвище</p><p>🪙 1000</p><button class="btn btn-gold btn-small" onclick="buyNickname()">Купить</button></div>' +
+            '<div class="stat-card"><h3>Дорогая вещь</h3><p>+10 к хайпу</p><p>🪙 1500</p><button class="btn btn-gold btn-small" onclick="buyExpensiveItem()">Купить</button></div>' +
+            '<div class="stat-card"><h3>Пожертвование</h3><p>+5 к хайпу</p><p>🪙 1000</p><button class="btn btn-green btn-small" onclick="buyDonation()">Пожертвовать</button></div>' +
+            '<div class="stat-card"><h3>Именные шорты</h3><p>+3 к хайпу</p><p>🪙 500</p><button class="btn btn-green btn-small" onclick="buyShorts()">Купить</button></div>' +
+            '</div>';
+    } else if (tab === 'rankings') {
+        var sorted = GameState.fighters.slice().sort(function(a, b) { return b.hype - a.hype; });
+        var html = '<h2>🏆 Рейтинг по хайпу</h2><table class="data-table"><thead><tr><th>#</th><th>Боец</th><th>Хайп</th><th>Рекорд</th><th>Страна</th></tr></thead><tbody>';
+        for (var i = 0; i < Math.min(20, sorted.length); i++) {
+            var b = sorted[i];
+            html += '<tr><td>' + (i + 1) + '</td><td><strong>' + b.fullName + '</strong></td><td>' + b.hype + '</td><td>' + b.records.MMA.wins + '-' + b.records.MMA.losses + '</td><td>' + b.country + '</td></tr>';
+        }
+        html += '</tbody></table>';
+        c.innerHTML = html;
+    } else if (tab === 'contracts') {
+        var contracts = f.contracts || [];
+        var html = '<h2>📋 Контракты</h2>';
+        if (contracts.length === 0) html += '<p style="color:#999;">Нет активных контрактов</p>';
+        else {
+            for (var i = 0; i < contracts.length; i++) {
+                var ct = contracts[i];
+                html += '<div class="stat-card"><h3>Контракт #' + (i + 1) + '</h3><p>Промоушн: ' + (ct.promoName || '?') + '</p><p>Гонорар за бой: 🪙 ' + ct.purse + '</p><p>Боёв осталось: ' + ct.fightsLeft + '</p></div>';
+            }
+        }
+        c.innerHTML = html;
+    } else if (tab === 'fights') {
+        c.innerHTML = '<h2>🥊 Бои</h2><p style="color:#999;">Рекорд MMA: ' + f.records.MMA.wins + 'W - ' + f.records.MMA.losses + 'L - ' + f.records.MMA.ko + 'KO</p>' +
+            '<h3 style="margin-top:15px;">Доступные соперники</h3>' +
+            '<div id="opponents-list"></div>' +
+            '<div id="fight-modal" style="display:none;"></div>';
+        loadOpponents();
+    }
+}
+
+function statCard(title, value, barClass, pct) {
+    return '<div class="stat-card"><h3>' + title + '</h3><div class="stat-value">' + value + '</div>' + (barClass ? '<div class="stat-bar"><div class="stat-bar-fill ' + barClass + '" style="width:' + pct + '%"></div></div>' : '') + '</div>';
+}
+
+function skillCard(name, val) {
+    return '<div class="stat-card"><h3>' + name + '</h3><div class="stat-value">' + val + '</div></div>';
+}
+
+function trainSkill(skill) {
+    var f = GameState.player;
+    if (!f) return;
+    if (f.energy < 10) { alert('Недостаточно энергии!'); return; }
+    var now = Date.now();
+    var lt = GameState.lastTrainingTime[f.id] || {};
+    if (lt[skill] && (now - lt[skill] < 2 * 60 * 60 * 1000)) { alert('Этот навык можно тренировать раз в 2 часа!'); return; }
+    
+    f[skill] = Math.min(100, f[skill] + 1);
+    f.energy = Math.max(0, f.energy - 10);
+    f.prime = Math.min(f.maxPrime, f.prime + 1);
+    if (!GameState.lastTrainingTime[f.id]) GameState.lastTrainingTime[f.id] = {};
+    GameState.lastTrainingTime[f.id][skill] = now;
+    
+    saveGame();
+    updateFighterDash();
+    showCareerTabContent('training');
+    document.querySelectorAll('#career-dashboard .nav-btn')[1].classList.add('active');
+    document.querySelectorAll('#career-dashboard .nav-btn')[0].classList.remove('active');
+    document.querySelectorAll('#career-dashboard .nav-btn')[2].classList.remove('active');
+    document.querySelectorAll('#career-dashboard .nav-btn')[3].classList.remove('active');
+    document.querySelectorAll('#career-dashboard .nav-btn')[4].classList.remove('active');
+    document.querySelectorAll('#career-dashboard .nav-btn')[5].classList.remove('active');
+}
+
+function buyNickname() {
+    var f = GameState.player;
+    if (f.coins < 1000) { alert('Недостаточно монет! 🪙'); return; }
+    var nick = prompt('Введите прозвище (например: "Орёл"):');
+    if (!nick) return;
+    f.coins -= 1000;
+    f.nickname = nick;
+    saveGame();
+    updateFighterDash();
+    showCareerTabContent('shop');
+    alert('Прозвище "' + nick + '" куплено! 🎉');
+}
+
+function buyExpensiveItem() {
+    var f = GameState.player;
+    if (f.coins < 1500) { alert('Недостаточно монет!'); return; }
+    f.coins -= 1500;
+    f.hype = Math.min(f.maxHype, f.hype + 10);
+    saveGame();
+    updateFighterDash();
+    showCareerTabContent('shop');
+    alert('Дорогая вещь куплена! +10 к хайпу 🎉');
+}
+
+function buyDonation() {
+    var f = GameState.player;
+    if (f.coins < 1000) { alert('Недостаточно монет!'); return; }
+    f.coins -= 1000;
+    f.hype = Math.min(f.maxHype, f.hype + 5);
+    saveGame();
+    updateFighterDash();
+    showCareerTabContent('shop');
+    alert('Пожертвование сделано! +5 к хайпу 🙏');
+}
+
+function buyShorts() {
+    var f = GameState.player;
+    if (f.coins < 500) { alert('Недостаточно монет!'); return; }
+    f.coins -= 500;
+    f.hype = Math.min(f.maxHype, f.hype + 3);
+    saveGame();
+    updateFighterDash();
+    showCareerTabContent('shop');
+    alert('Именные шорты созданы! +3 к хайпу 👖');
+    }
+    // ============================================
+// БОИ
+// ============================================
+function loadOpponents() {
+    var f = GameState.player;
+    var opponents = GameState.fighters.filter(function(o) { return o.id !== f.id && !o.retired; });
+    var list = document.getElementById('opponents-list');
+    if (!list) return;
+    var html = '<table class="data-table"><thead><tr><th>Боец</th><th>Стиль</th><th>Рекорд</th><th>Хайп</th><th>Действие</th></tr></thead><tbody>';
+    for (var i = 0; i < Math.min(10, opponents.length); i++) {
+        var o = opponents[i];
+        html += '<tr><td><strong>' + o.fullName + '</strong></td><td>' + o.baseStyle + '</td><td>' + o.records.MMA.wins + '-' + o.records.MMA.losses + '</td><td>' + o.hype + '</td><td><button class="btn btn-primary btn-small" onclick="startFight(\'' + o.id + '\')">Драться</button></td></tr>';
+    }
+    html += '</tbody></table>';
+    list.innerHTML = html;
+}
+
+function startFight(opponentId) {
+    var f = GameState.player;
+    var o = null;
+    for (var i = 0; i < GameState.fighters.length; i++) {
+        if (GameState.fighters[i].id === opponentId) { o = GameState.fighters[i]; break; }
+    }
+    if (!o) return;
+
+    var modal = document.getElementById('fight-modal');
+    modal.style.display = 'block';
+    modal.innerHTML = '<div class="modal-overlay"><div class="modal">' +
+        '<h3>🥊 Бой: ' + f.fullName + ' vs ' + o.fullName + '</h3>' +
+        '<p>Выберите тактику на бой:</p>' +
+        '<select id="fight-tactic" class="input" style="margin:10px 0;">' +
+        '<option value="balance">⚖️ Баланс</option>' +
+        '<option value="wrestle">🤼 Бороться</option>' +
+        '<option value="box">🥊 Боксировать</option>' +
+        '<option value="counter_box">🛡️ Контр-атаки + Бокс</option>' +
+        '<option value="counter_wrestle">🛡️ Контр-атаки + Борьба</option>' +
+        '</select>' +
+        '<button class="btn btn-primary btn-large" onclick="watchFight(\'' + o.id + '\')">👀 Смотреть бой</button>' +
+        '<button class="btn btn-secondary btn-large" onclick="skipFight(\'' + o.id + '\')">⏩ Пропустить</button>' +
+        '<button class="btn btn-back" onclick="closeFightModal()">Отмена</button>' +
+        '</div></div>';
+}
+
+function closeFightModal() {
+    document.getElementById('fight-modal').style.display = 'none';
+}
+
+function resolveFight(opponentId, tactic) {
+    var f = GameState.player;
+    var o = null;
+    for (var i = 0; i < GameState.fighters.length; i++) {
+        if (GameState.fighters[i].id === opponentId) { o = GameState.fighters[i]; break; }
+    }
+    if (!o) return { winner: null, commentary: [] };
+
+    // Тактика соперника
+    var oppTactic = o.tactic || 'balance';
+    if (Math.random() < 0.5) {
+        var tactics = ['balance', 'wrestle', 'box', 'counter_box', 'counter_wrestle'];
+        oppTactic = tactics[randomInt(0, 4)];
+    }
+
+    // Подсчёт очков на основе навыков и тактик
+    var fScore = 0, oScore = 0;
+    var commentary = [];
+    commentary.push('⚡ Бой начался! ' + f.fullName + ' (' + tactic + ') vs ' + o.fullName + ' (' + oppTactic + ')');
+
+    // Бонусы за тактику
+    if (tactic === 'box') fScore += f.boxing * 2 + f.speed;
+    else if (tactic === 'wrestle') fScore += f.wrestling * 2 + f.strength;
+    else if (tactic === 'counter_box') fScore += f.boxing + f.speed + f.submission;
+    else if (tactic === 'counter_wrestle') fScore += f.wrestling + f.strength + f.submission;
+    else fScore += f.boxing + f.wrestling + f.speed;
+
+    if (oppTactic === 'box') oScore += o.boxing * 2 + o.speed;
+    else if (oppTactic === 'wrestle') oScore += o.wrestling * 2 + o.strength;
+    else if (oppTactic === 'counter_box') oScore += o.boxing + o.speed + o.submission;
+    else if (oppTactic === 'counter_wrestle') oScore += o.wrestling + o.strength + o.submission;
+    else oScore += o.boxing + o.wrestling + o.speed;
+
+    // Контр-тактики
+    if (tactic === 'wrestle' && oppTactic === 'box') { fScore += 10; commentary.push(f.fullName + ' легко проходит в ноги, ' + o.fullName + ' не успевает защититься!'); }
+    if (tactic === 'box' && oppTactic === 'wrestle') { fScore += 5; commentary.push(f.fullName + ' держит дистанцию джебом, не даёт пройти!'); }
+    if (tactic === 'counter_box' && oppTactic === 'box') { fScore += 8; commentary.push(f.fullName + ' ловит на контр-атаке!'); }
+    if (tactic === 'counter_wrestle' && oppTactic === 'wrestle') { fScore += 8; commentary.push(f.fullName + ' защищается и контрит!'); }
+
+    // Влияние прайма и хайпа
+    fScore += f.prime / 10;
+    oScore += o.prime / 10;
+    fScore += f.hype / 20;
+    oScore += o.hype / 20;
+
+    // Случайность
+    fScore += randomInt(-5, 5);
+    oScore += randomInt(-5, 5);
+
+    // Энергия влияет
+    fScore *= (f.energy / 100);
+    oScore *= (o.energy / 100);
+
+    commentary.push('📊 Очки: ' + f.fullName + ' = ' + Math.round(fScore) + ' | ' + o.fullName + ' = ' + Math.round(oScore));
+
+    var won = fScore > oScore;
+    var ko = false;
+    if (won && fScore - oScore > 15) { ko = true; commentary.push('💥 ТЯЖЁЛЫЙ НОКАУТ! ' + f.fullName + ' вырубает соперника!'); }
+    else if (won && fScore - oScore > 8) { commentary.push('👊 ' + f.fullName + ' доминирует и забирает победу!'); }
+    else if (won) { commentary.push('🤝 Близкий бой! ' + f.fullName + ' побеждает решением судей.'); }
+    else if (oScore - fScore > 15) { ko = true; commentary.push('💥 НОКАУТ! ' + o.fullName + ' вырубает ' + f.fullName + '!'); }
+    else if (oScore - fScore > 8) { commentary.push('👊 ' + o.fullName + ' доминирует и побеждает!'); }
+    else { commentary.push('🤝 Близкий бой! ' + o.fullName + ' побеждает решением.'); }
+
+    return { winner: won ? 'player' : 'opponent', ko: ko, commentary: commentary, fScore: fScore, oScore: oScore };
+}
+
+function applyFightResult(result) {
+    var f = GameState.player;
+    var won = result.winner === 'player';
+    var ko = result.ko;
+
+    f.energy = Math.max(0, f.energy - randomInt(20, 40));
+    f.records.MMA.wins += won ? 1 : 0;
+    f.records.MMA.losses += won ? 0 : 1;
+    if (won && ko) f.records.MMA.ko++;
+    f.prime = Math.max(0, Math.min(f.maxPrime, f.prime + (won ? 30 : -30)));
+    f.hype = Math.max(0, Math.min(f.maxHype, f.hype + (won ? 10 : 0) + (ko ? 5 : 0)));
+    f.coins += won ? randomInt(50, 200) : randomInt(10, 50);
+
+    saveGame();
+}
+
+function watchFight(opponentId) {
+    var tactic = document.getElementById('fight-tactic').value;
+    closeFightModal();
+    var result = resolveFight(opponentId, tactic);
+    var c = document.getElementById('career-content');
+    var html = '<h2>🥊 Бой</h2><div class="fight-commentary">';
+    for (var i = 0; i < result.commentary.length; i++) {
+        html += '<p>' + result.commentary[i] + '</p>';
+    }
+    html += '</div>';
+    html += '<p style="font-size:20px;margin-top:15px;">' + (result.winner === 'player' ? '🏆 ПОБЕДА!' : '💔 ПОРАЖЕНИЕ') + '</p>';
+    html += '<button class="btn btn-primary btn-large" onclick="applyFightResultAndRefresh()">Продолжить</button>';
+    c.innerHTML = html;
+    window._lastFightResult = result;
+}
+
+function skipFight(opponentId) {
+    var tactic = document.getElementById('fight-tactic').value;
+    closeFightModal();
+    var result = resolveFight(opponentId, tactic);
+    applyFightResult(result);
+    updateFighterDash();
+    showCareerTabContent('overview');
+    document.querySelectorAll('#career-dashboard .nav-btn')[0].classList.add('active');
+    alert((result.winner === 'player' ? '🏆 ПОБЕДА!' : '💔 ПОРАЖЕНИЕ') + '\n' + result.commentary[result.commentary.length - 1]);
+}
+
+function applyFightResultAndRefresh() {
+    if (window._lastFightResult) {
+        applyFightResult(window._lastFightResult);
+        window._lastFightResult = null;
+    }
+    updateFighterDash();
+    showCareerTabContent('overview');
+    document.querySelectorAll('#career-dashboard .nav-btn')[0].classList.add('active');
+    }
+            // ============================================
+        // ПРОМОУТЕР
+        // ============================================
+        function startPromoter() {
+            if (GameState.promotions.length === 0) {
+                GameState.promotions.push({
+                    id: generateId(), name: 'UFA', country: 'Россия', budget: 2000, revenue: 0, expenses: 0,
+                    popularity: 50, roster: [], events: []
+                });
+            }
+            GameState.player = GameState.promotions[0];
+            GameState.mode = 'promotion';
+            saveGame();
+            showScreen('promotion-dashboard');
+            updatePromoDash();
+            showPromoterTabContent('overview');
+        }
+
+        function updatePromoDash() {
+            var p = GameState.player;
+            if (!p) return;
+            var card = document.getElementById('promo-card-mini');
+            if (card) card.innerHTML = '<div style="font-size:40px;">🏢</div><h3>' + p.name + '</h3><p style="color:#999;">' + p.country + '</p><p>🪙 ' + p.budget + ' | ⭐ ' + p.popularity + '</p>';
+        }
+
+        function showPromoterTab(e, tab) {
+            document.querySelectorAll('#promotion-dashboard .nav-btn').forEach(function(b) { b.classList.remove('active'); });
+            e.target.classList.add('active');
+            showPromoterTabContent(tab);
+        }
+
+        function showPromoterTabContent(tab) {
+            var c = document.getElementById('promotion-content');
+            var p = GameState.player;
+            if (!c || !p) return;
+
+            if (tab === 'overview') {
+                c.innerHTML = '<h2>📊 Обзор</h2>' +
+                    '<div class="stat-grid">' +
+                    '<div class="stat-card"><h3>💰 Баланс</h3><div class="stat-value" style="color:#10B981;">🪙 ' + p.budget + '</div></div>' +
+                    '<div class="stat-card"><h3>⭐ Популярность</h3><div class="stat-value">' + p.popularity + '%</div></div>' +
+                    '<div class="stat-card"><h3>👥 Бойцы в ростере</h3><div class="stat-value">' + p.roster.length + '</div></div>' +
+                    '<div class="stat-card"><h3>📅 Карды</h3><div class="stat-value">' + (p.events ? p.events.length : 0) + '</div></div>' +
+                    '</div>';
+            } else if (tab === 'roster') {
+                var html = '<h2>👥 Все бойцы в мире</h2><table class="data-table"><thead><tr><th>Боец</th><th>Стиль</th><th>Рекорд</th><th>Хайп</th><th>В ростере</th><th>Действие</th></tr></thead><tbody>';
+                for (var i = 0; i < GameState.fighters.length; i++) {
+                    var f = GameState.fighters[i];
+                    var inRoster = p.roster.indexOf(f.id) !== -1;
+                    html += '<tr><td><strong>' + f.fullName + '</strong></td><td>' + f.baseStyle + '</td><td>' + f.records.MMA.wins + '-' + f.records.MMA.losses + '</td><td>' + f.hype + '</td><td>' + (inRoster ? '<span class="badge badge-green">В ростере</span>' : '<span class="badge badge-red">Свободен</span>') + '</td><td>' + (!inRoster ? '<button class="btn btn-primary btn-small" onclick="offerContract(\'' + f.id + '\')">Предложить контракт</button>' : '<button class="btn btn-small" disabled>Уже в ростере</button>') + '</td></tr>';
+                }
+                html += '</tbody></table>';
+                c.innerHTML = html;
+            } else if (tab === 'events') {
+                var html = '<h2>📅 Карды</h2><button class="btn btn-primary" onclick="createCard()">Создать новый кард</button>';
+                if (p.events && p.events.length > 0) {
+                    html += '<div class="stat-grid" style="margin-top:15px;">';
+                    for (var i = 0; i < p.events.length; i++) {
+                        var evt = p.events[i];
+                        html += '<div class="stat-card"><h3>' + evt.name + '</h3><p>Бои: ' + evt.fights.length + '/3</p>';
+                        if (evt.fights.length > 0) {
+                            for (var j = 0; j < evt.fights.length; j++) {
+                                var fight = evt.fights[j];
+                                var f1 = findFighter(fight.fighter1);
+                                var f2 = findFighter(fight.fighter2);
+                                html += '<p style="font-size:12px;">' + (j === 0 ? '⭐ ' : '') + (f1 ? f1.fullName : '?') + ' vs ' + (f2 ? f2.fullName : '?') + ' | 🪙' + fight.purse1 + '/' + fight.purse2 + '</p>';
+                            }
+                        }
+                        html += '</div>';
+                    }
+                    html += '</div>';
+                }
+                c.innerHTML = html;
+            } else if (tab === 'finances') {
+                c.innerHTML = '<h2>💰 Финансы</h2><div class="stat-grid">' +
+                    '<div class="stat-card"><h3>Баланс</h3><div class="stat-value" style="color:#10B981;">🪙 ' + p.budget + '</div></div>' +
+                    '<div class="stat-card"><h3>Доходы</h3><div class="stat-value">🪙 ' + (p.revenue || 0) + '</div></div>' +
+                    '<div class="stat-card"><h3>Расходы</h3><div class="stat-value" style="color:#E31E24;">🪙 ' + (p.expenses || 0) + '</div></div>' +
+                    '</div>';
+            }
+        }
+
+        function findFighter(id) {
+            for (var i = 0; i < GameState.fighters.length; i++) {
+                if (GameState.fighters[i].id === id) return GameState.fighters[i];
+            }
+            return null;
+        }
+
+        function offerContract(fighterId) {
+            var p = GameState.player;
+            var f = findFighter(fighterId);
+            if (!f || !p) return;
+            var amount = parseInt(prompt('Сколько монет предложить ' + f.fullName + ' за подписание контракта?\nСлабый боец: 10-50 | Средний: 50-150 | Сильный: 150-300'));
+            if (!amount || amount <= 0) return;
+            if (p.budget < amount) { alert('Недостаточно средств!'); return; }
+            p.budget -= amount;
+            p.expenses += amount;
+            p.roster.push(f.id);
+            var contract = {
+                fighterId: f.id, promotionId: p.id, purse: amount, fightsLeft: 3, promoName: p.name
+            };
+            f.contracts.push(contract);
+            f.coins += amount;
+            saveGame();
+            updatePromoDash();
+            showPromoterTabContent('roster');
+            document.querySelectorAll('#promotion-dashboard .nav-btn')[1].classList.add('active');
+            alert(f.fullName + ' подписал контракт за 🪙' + amount + '!');
+        }
+
+        function createCard() {
+            var p = GameState.player;
+            if (!p) return;
+            var name = prompt('Название карда:', p.name + ' Fight Night');
+            if (!name) return;
+            var event = {
+                id: generateId(), name: name, promotionId: p.id,
+                date: new Date(GameState.currentDate.getTime() + 14 * 24 * 60 * 60 * 1000),
+                fights: []
+            };
+            if (!p.events) p.events = [];
+            p.events.push(event);
+            GameState.events.push(event);
+            saveGame();
+            showPromoterTabContent('events');
+            document.querySelectorAll('#promotion-dashboard .nav-btn')[2].classList.add('active');
+            alert('Кард "' + name + '" создан! Теперь добавьте бои.');
+            addFightToCard(event.id);
+        }
+
+        function addFightToCard(eventId) {
+            var p = GameState.player;
+            var evt = null;
+            for (var i = 0; i < (p.events || []).length; i++) {
+                if (p.events[i].id === eventId) { evt = p.events[i]; break; }
+            }
+            if (!evt || evt.fights.length >= 3) { alert('Максимум 3 боя на кард!'); return; }
+            
+            var rosterFighters = [];
+            for (var i = 0; i < GameState.fighters.length; i++) {
+                if (p.roster.indexOf(GameState.fighters[i].id) !== -1) rosterFighters.push(GameState.fighters[i]);
+            }
+            if (rosterFighters.length < 2) { alert('Нужно минимум 2 бойца в ростере!'); return; }
+
+            var f1Name = prompt('Боец 1 (имя из ростера):\n' + rosterFighters.map(function(f, i) { return (i + 1) + '. ' + f.fullName; }).join('\n'));
+            var f2Name = prompt('Боец 2 (имя из ростера):');
+            var f1 = null, f2 = null;
+            for (var i = 0; i < rosterFighters.length; i++) {
+                if (rosterFighters[i].fullName.toLowerCase() === (f1Name || '').toLowerCase()) f1 = rosterFighters[i];
+                if (rosterFighters[i].fullName.toLowerCase() === (f2Name || '').toLowerCase()) f2 = rosterFighters[i];
+            }
+            if (!f1 || !f2 || f1.id === f2.id) { alert('Ошибка выбора бойцов!'); return; }
+
+            var purse1 = parseInt(prompt('Гонорар для ' + f1.fullName + ':\nСлабый: 50-100 | Средний: 100-250 | Сильный: 250-500'));
+            var purse2 = parseInt(prompt('Гонорар для ' + f2.fullName + ':'));
+            if (!purse1 || !purse2 || p.budget < (purse1 + purse2)) { alert('Недостаточно средств или неверная сумма!'); return; }
+
+            p.budget -= (purse1 + purse2);
+            p.expenses += (purse1 + purse2);
+            evt.fights.push({ fighter1: f1.id, fighter2: f2.id, purse1: purse1, purse2: purse2, isMain: evt.fights.length === 0 });
+            saveGame();
+            showPromoterTabContent('events');
+            document.querySelectorAll('#promotion-dashboard .nav-btn')[2].classList.add('active');
+            alert('Бой добавлен! ' + f1.fullName + ' vs ' + f2.fullName);
+        }
+
+        // ============================================
+        // ВОССТАНОВЛЕНИЕ ЭНЕРГИИ (каждые 5 часов +20)
+        // ============================================
+        setInterval(function() {
+            if (GameState.player && GameState.mode === 'career') {
+                GameState.player.energy = Math.min(GameState.player.maxEnergy, GameState.player.energy + 20);
+                saveGame();
+            }
+        }, 5 * 60 * 60 * 1000); // 5 часов в миллисекундах (для теста можно уменьшить)
+
+        // Для теста: восстановление каждые 30 секунд
+        setInterval(function() {
+            if (GameState.player && GameState.mode === 'career') {
+                GameState.player.energy = Math.min(GameState.player.maxEnergy, GameState.player.energy + 20);
+                if (document.getElementById('career-dashboard').classList.contains('active')) {
+                    updateFighterDash();
+                }
+            }
+        }, 30000); // 30 секунд для теста
+
+        // ============================================
+        // ЗАПУСК
+        // ============================================
+        window.onload = function() {
+            loadAllSaves();
+            generateWorld();
+            updateLoadSection();
+            showScreen('main-menu');
+            console.log('✅ Promotion Simulator v2.0 запущен!');
+            console.log('👥 Бойцов:', GameState.fighters.length);
+            console.log('🏢 Промоушнов:', GameState.promotions.length);
+        };
+    </script>
+</body>
+</html>
