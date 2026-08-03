@@ -54,26 +54,20 @@
         <!-- ДАШБОРД -->
         <div id="dashboard" class="screen">
             <div class="dashboard">
-                <div class="sidebar">
+                <div class="topbar">
                     <div class="card-mini" id="player-card">
-                        <div style="font-size:1.8rem;">👤</div>
                         <strong id="sidebar-name">Игрок</strong>
-                        <p style="font-size:0.7rem;color:var(--text2);" id="sidebar-info">Не в сети</p>
+                        <span id="sidebar-info">Не в сети</span>
                     </div>
                     <nav id="sidebar-nav"></nav>
-                    <button class="btn btn-danger" onclick="logout()" style="width:100%;margin-top:auto;">🚪 Выйти</button>
-                    <button class="btn btn-back" onclick="goToMenu()" style="width:100%;">← В меню</button>
+                    <button class="btn btn-small btn-danger" onclick="logout()">🚪 Выйти</button>
                 </div>
                 <div class="main-content" id="main-content">
-                    <h2>Добро пожаловать!</h2>
-                    <p style="color:var(--text2);">Выберите раздел в меню слева.</p>
                     <div id="content-area"></div>
                 </div>
                 <div class="chat-panel" id="chat-panel">
-                    <h3 style="margin-bottom:0.6rem;">💬 Чат <span id="chat-online" class="online-badge">0</span></h3>
-                    <div class="chat-messages" id="chat-messages">
-                        <p style="color:var(--text2);">Загрузка сообщений...</p>
-                    </div>
+                    <h3>💬 Чат <span id="chat-online" class="online-badge">0</span></h3>
+                    <div class="chat-messages" id="chat-messages"></div>
                     <div class="chat-input-area">
                         <input type="text" id="chat-input" class="chat-input" placeholder="Сообщение..." onkeypress="if(event.key==='Enter')sendChat()">
                         <button class="btn btn-blue btn-small" onclick="sendChat()">➤</button>
@@ -82,12 +76,10 @@
             </div>
         </div>
     </div>
-    <button class="btn toggle-chat-btn" onclick="toggleChat()">💬 Чат</button>
 
-    <!-- Скрипты в правильном порядке -->
     <script src="js/chat.js"></script>
     <script src="js/fighter.js"></script>
     <script src="js/promoter.js"></script>
     <script src="js/socket.js"></script>
 </body>
-    </html>
+</html>
