@@ -22,6 +22,7 @@ body {
     color: var(--text);
     min-height: 100vh;
     line-height: 1.5;
+    font-size: 16px;
 }
 
 .screen {
@@ -37,13 +38,13 @@ body {
 /* МЕНЮ */
 .menu-container {
     max-width: 700px;
-    margin: 60px auto;
-    padding: 20px;
+    margin: 40px auto;
+    padding: 15px;
     text-align: center;
 }
 
 .logo {
-    font-size: 38px;
+    font-size: 32px;
     font-weight: 900;
 }
 
@@ -53,22 +54,23 @@ body {
 
 .subtitle {
     color: var(--text2);
-    margin: 10px 0 30px;
-    font-size: 15px;
+    margin: 8px 0 25px;
+    font-size: 14px;
 }
 
 /* КНОПКИ */
 .btn {
-    padding: 10px 18px;
+    padding: 14px 20px;
     border: 2px solid var(--border);
-    border-radius: 8px;
-    font-size: 14px;
+    border-radius: 10px;
+    font-size: 16px;
     font-weight: 600;
     cursor: pointer;
     background: var(--bg);
     transition: all 0.15s;
     text-decoration: none;
     display: inline-block;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .btn:hover {
@@ -119,23 +121,23 @@ body {
 
 .btn-large {
     width: 100%;
-    padding: 14px;
-    font-size: 16px;
-    margin-top: 10px;
+    padding: 16px;
+    font-size: 17px;
+    margin-top: 12px;
 }
 
 .btn-small {
-    padding: 6px 12px;
-    font-size: 12px;
+    padding: 8px 14px;
+    font-size: 13px;
 }
 
 .btn-back {
     background: none;
     border: none;
     color: var(--text2);
-    padding: 8px 0;
+    padding: 10px 0;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 15px;
 }
 
 .btn-back:hover {
@@ -145,8 +147,8 @@ body {
 /* ФОРМЫ */
 .creator-container {
     max-width: 500px;
-    margin: 30px auto;
-    padding: 25px;
+    margin: 20px auto;
+    padding: 20px;
     background: var(--bg);
     border: 2px solid var(--border);
     border-radius: 12px;
@@ -154,29 +156,29 @@ body {
 
 .creator-container h2 {
     margin-bottom: 15px;
-    font-size: 20px;
+    font-size: 22px;
 }
 
 .form-group {
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 }
 
 .form-group label {
     display: block;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--text2);
     text-transform: uppercase;
-    margin-bottom: 4px;
+    margin-bottom: 5px;
     letter-spacing: 0.5px;
 }
 
 .input, select {
     width: 100%;
-    padding: 10px;
+    padding: 12px;
     border: 2px solid var(--border);
-    border-radius: 8px;
-    font-size: 14px;
+    border-radius: 10px;
+    font-size: 16px;
     background: var(--bg);
     color: var(--text);
     font-family: inherit;
@@ -190,7 +192,7 @@ body {
 .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 12px;
 }
 
 /* ДАШБОРД */
@@ -202,19 +204,19 @@ body {
 
 .sidebar {
     background: var(--bg2);
-    padding: 15px;
+    padding: 12px;
     border-right: 2px solid var(--border);
     overflow-y: auto;
 }
 
 .main-content {
-    padding: 20px;
+    padding: 15px;
     overflow-y: auto;
 }
 
 .chat-panel {
     background: var(--bg2);
-    padding: 15px;
+    padding: 12px;
     border-left: 2px solid var(--border);
     display: flex;
     flex-direction: column;
@@ -223,13 +225,13 @@ body {
 /* НАВИГАЦИЯ */
 .nav-btn {
     width: 100%;
-    padding: 10px;
+    padding: 12px 10px;
     text-align: left;
     background: none;
     border: none;
-    font-size: 13px;
+    font-size: 14px;
     cursor: pointer;
-    border-radius: 6px;
+    border-radius: 8px;
     margin: 2px 0;
     color: var(--text2);
 }
@@ -248,45 +250,45 @@ body {
 .card-mini {
     padding: 12px;
     background: var(--bg);
-    border-radius: 8px;
+    border-radius: 10px;
     border: 1px solid var(--border);
     margin-bottom: 10px;
     text-align: center;
-    font-size: 13px;
+    font-size: 14px;
 }
 
 .stat-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 10px;
     margin-top: 10px;
 }
 
 .stat-card {
-    padding: 12px;
+    padding: 14px;
     background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 10px;
 }
 
 .stat-card h3 {
-    font-size: 10px;
+    font-size: 11px;
     color: var(--text2);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 .stat-value {
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 700;
     margin: 4px 0;
 }
 
 .stat-bar {
-    height: 3px;
+    height: 4px;
     background: var(--bg2);
     border-radius: 2px;
-    margin-top: 4px;
+    margin-top: 5px;
 }
 
 .stat-bar-fill {
@@ -303,14 +305,14 @@ body {
 .data-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 12px;
+    font-size: 13px;
 }
 
 .data-table th {
     background: var(--bg2);
-    padding: 8px 10px;
+    padding: 10px 8px;
     text-align: left;
-    font-size: 10px;
+    font-size: 11px;
     text-transform: uppercase;
     color: var(--text2);
     letter-spacing: 0.5px;
@@ -318,7 +320,7 @@ body {
 }
 
 .data-table td {
-    padding: 8px 10px;
+    padding: 10px 8px;
     border-bottom: 1px solid var(--border);
 }
 
@@ -335,9 +337,9 @@ body {
 }
 
 .chat-msg {
-    padding: 5px 0;
+    padding: 6px 0;
     border-bottom: 1px solid var(--border);
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.4;
 }
 
@@ -362,10 +364,10 @@ body {
 
 .chat-input {
     flex: 1;
-    padding: 8px;
+    padding: 10px;
     border: 2px solid var(--border);
-    border-radius: 6px;
-    font-size: 13px;
+    border-radius: 8px;
+    font-size: 14px;
     background: var(--bg);
 }
 
@@ -374,16 +376,16 @@ body {
     display: inline-block;
     background: var(--green);
     color: white;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
 }
 
 .badge {
     display: inline-block;
-    padding: 2px 6px;
+    padding: 3px 8px;
     border-radius: 4px;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
 }
 
@@ -394,11 +396,11 @@ body {
 /* УВЕДОМЛЕНИЯ */
 .notification {
     background: var(--bg2);
-    border-left: 3px solid var(--blue);
-    padding: 10px;
-    margin: 4px 0;
-    border-radius: 0 6px 6px 0;
-    font-size: 12px;
+    border-left: 4px solid var(--blue);
+    padding: 12px;
+    margin: 5px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 13px;
     cursor: pointer;
 }
 
@@ -410,17 +412,17 @@ body {
 /* БОЙ */
 .fight-log {
     background: var(--bg2);
-    border-radius: 6px;
-    padding: 10px;
+    border-radius: 8px;
+    padding: 12px;
     margin: 10px 0;
     max-height: 250px;
     overflow-y: auto;
-    font-size: 13px;
+    font-size: 14px;
 }
 
 .fight-log p {
     margin: 5px 0;
-    padding: 3px 0;
+    padding: 4px 0;
     border-bottom: 1px solid var(--border);
 }
 
@@ -440,52 +442,119 @@ body {
 
 .modal {
     background: white;
-    border-radius: 12px;
+    border-radius: 14px;
     padding: 20px;
-    max-width: 450px;
-    width: 90%;
+    max-width: 400px;
+    width: 95%;
     border: 2px solid var(--border);
 }
 
 .modal h3 {
     margin-bottom: 12px;
+    font-size: 18px;
 }
 
 /* ЧАТ НА МОБИЛКЕ */
 .toggle-chat-btn {
     display: none;
     position: fixed;
-    bottom: 10px;
-    right: 10px;
+    bottom: 15px;
+    right: 15px;
     z-index: 200;
     background: var(--blue);
     color: white;
+    border-radius: 50px;
+    padding: 12px 18px;
+    font-size: 16px;
 }
 
-@media (max-width: 1024px) {
+/* ТЕЛЕФОН */
+@media (max-width: 768px) {
     .dashboard {
         grid-template-columns: 1fr;
     }
-    
+
     .chat-panel {
         display: none;
     }
-    
+
     .chat-panel.mobile-open {
         display: flex;
         position: fixed;
         bottom: 0;
         left: 0;
         right: 0;
-        height: 50vh;
+        height: 55vh;
         z-index: 100;
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
     }
-    
+
     .toggle-chat-btn {
         display: block;
     }
-    
+
     .form-row {
         grid-template-columns: 1fr;
     }
-}
+
+    .logo {
+        font-size: 28px;
+    }
+
+    .btn {
+        padding: 14px 16px;
+        font-size: 16px;
+    }
+
+    .btn-large {
+        padding: 16px;
+        font-size: 17px;
+    }
+
+    .input, select {
+        padding: 14px;
+        font-size: 16px;
+    }
+
+    .creator-container {
+        margin: 10px;
+        padding: 15px;
+    }
+
+    .stat-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .stat-card {
+        padding: 12px;
+    }
+
+    .stat-value {
+        font-size: 20px;
+    }
+
+    .sidebar {
+        padding: 10px;
+        border-right: none;
+        border-bottom: 2px solid var(--border);
+    }
+
+    .nav-btn {
+        padding: 14px 12px;
+        font-size: 15px;
+    }
+
+    .main-content {
+        padding: 12px;
+    }
+
+    .data-table {
+        font-size: 12px;
+    }
+
+    .data-table th, .data-table td {
+        padding: 8px 5px;
+    }
+        }
