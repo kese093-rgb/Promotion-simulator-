@@ -21,8 +21,11 @@ function getBaseStats(style, age) {
 }
 
 function updatePreviewStats() {
-    var style = document.getElementById('f-style') ? document.getElementById('f-style').value : 'boxing';
-    var age = parseInt(document.getElementById('f-age') ? document.getElementById('f-age').value : 20);
+    var styleEl = document.getElementById('f-style');
+    var ageEl = document.getElementById('f-age');
+    if (!styleEl || !ageEl) return;
+    var style = styleEl.value;
+    var age = parseInt(ageEl.value);
     var s = getBaseStats(style, age);
     var pv = document.getElementById('preview-stats');
     if (pv) {
@@ -30,24 +33,55 @@ function updatePreviewStats() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    var fs = document.getElementById('f-style');
-    var fa = document.getElementById('f-age');
-    if (fs) fs.addEventListener('change', updatePreviewStats);
-    if (fa) fa.addEventListener('change', updatePreviewStats);
-    updatePreviewStats();
-});
+// ============================================
+// СОХРАНЕНИЯ
+// ============================================
+function saveCareerLocally() {
+    var f = findMyFighter();
+    if (!f) return;
+    var saveData = {
+        fighter: f,
+        lastTrainTime: lastTrainTime,
+        timestamp: Date.now()
+    };
+    localStorage.setItem('ps_career_slot', JSON.stringify(saveData));
+}
+
+function loadCareerLocally() {
+    var data = localStorage.getItem('ps_career_slot');
+    if (!data) return null;
+    try {
+        var saveData = JSON.parse(data);
+        lastTrainTime = saveData.lastTrainTime || {};
+        return saveData.fighter;
+    } catch(e) {
+        return null;
+    }
+}
+
+function hasCareerSave() {
+    return localStorage.getItem('ps_career_slot') !== null;
+}
 
 // ============================================
 // СОЗДАНИЕ БОЙЦА
 // ============================================
 function createMyFighter() {
-    var name = document.getElementById('f-name').value.trim();
-    var surname = document.getElementById('f-surname').value.trim();
+    var nameEl = document.getElementById('f-name');
+    var surnameEl = document.getElementById('f-surname');
+    var ageEl = document.getElementById('f-age');
+    var countryEl = document.getElementById('f-country');
+    var styleEl = document.getElementById('f-style');
+
+    if (!nameEl || !surnameEl) { alert('Ошибка формы!'); return; }
+
+    var name = nameEl.value.trim();
+    var surname = surnameEl.value.trim();
     if (!name || !surname) { alert('Введите имя и фамилию!'); return; }
-    var age = parseInt(document.getElementById('f-age').value);
-    var country = document.getElementById('f-country').value;
-    var style = document.getElementById('f-style').value;
+
+    var age = parseInt(ageEl.value);
+    var country = countryEl.value;
+    var style = styleEl.value;
     var stats = getBaseStats(style, age);
     var playerName = name + ' ' + surname;
 
@@ -55,15 +89,24 @@ function createMyFighter() {
 
     setTimeout(function() {
         if (!socket || !myPlayer || !myPlayer.id) {
-            alert('Не удалось подключиться к серверу. Попробуйте ещё раз.');
+            alert('Сервер не отвечает. Подождите и попробуйте снова.');
             return;
         }
-        socket.emit('createFighter', {
+
+        var fighterData = {
             firstName: name, lastName: surname, age: age, country: country, baseStyle: style,
             boxing: stats.boxing, wrestling: stats.wrestling, submission: stats.submission,
             kick: stats.kick, speed: stats.speed, stamina: stats.stamina, strength: stats.strength
-        });
+        };
+
+        socket.emit('createFighter', fighterData);
         myMode = 'fighter';
+
+        // Ждём подтверждения от сервера и сохраняем локально
+        setTimeout(function() {
+            var f = findMyFighter();
+            if (f) saveCareerLocally();
+        }, 1000);
     }, 800);
 }
 
@@ -72,15 +115,15 @@ function createMyFighter() {
 // ============================================
 function renderFighterOverview(f) {
     var rec = f.records || { wins: 0, losses: 0, ko: 0 };
-    var html = '<h2>📊 ' + f.fullName + '</h2>';
+    var html = '<h2>📊 ' + f.fullName + (f.nickname ? ' "' + f.nickname + '"' : '') + '</h2>';
     html += '<div class="stat-grid">';
-    html += '<div class="stat-card"><h3>Энергия</h3><div class="stat-value">' + (f.energy || 100) + '/' + (f.maxEnergy || 100) + '</div><div class="stat-bar"><div class="stat-bar-fill bar-energy" style="width:' + ((f.energy || 100) / (f.maxEnergy || 100) * 100) + '%"></div></div></div>';
-    html += '<div class="stat-card"><h3>Прайм</h3><div class="stat-value">' + (f.prime || 0) + '/100</div><div class="stat-bar"><div class="stat-bar-fill bar-prime" style="width:' + (f.prime || 0) + '%"></div></div></div>';
-    html += '<div class="stat-card"><h3>Хайп</h3><div class="stat-value">' + (f.hype || 0) + '/100</div><div class="stat-bar"><div class="stat-bar-fill bar-hype" style="width:' + (f.hype || 0) + '%"></div></div></div>';
-    html += '<div class="stat-card"><h3>Рекорд</h3><div class="stat-value" style="font-size:18px;">' + rec.wins + 'W-' + rec.losses + 'L-' + (rec.ko || 0) + 'KO</div></div>';
-    html += '<div class="stat-card"><h3>Монеты</h3><div class="stat-value">🪙' + (f.coins || 0) + '</div></div>';
+    html += '<div class="stat-card"><h3>⚡ Энергия</h3><div class="stat-value">' + (f.energy || 100) + '/' + (f.maxEnergy || 100) + '</div><div class="stat-bar"><div class="stat-bar-fill bar-energy" style="width:' + ((f.energy || 100) / (f.maxEnergy || 100) * 100) + '%"></div></div></div>';
+    html += '<div class="stat-card"><h3>🔥 Прайм</h3><div class="stat-value">' + (f.prime || 0) + '/100</div><div class="stat-bar"><div class="stat-bar-fill bar-prime" style="width:' + (f.prime || 0) + '%"></div></div></div>';
+    html += '<div class="stat-card"><h3>📢 Хайп</h3><div class="stat-value">' + (f.hype || 0) + '/100</div><div class="stat-bar"><div class="stat-bar-fill bar-hype" style="width:' + (f.hype || 0) + '%"></div></div></div>';
+    html += '<div class="stat-card"><h3>🏆 Рекорд</h3><div class="stat-value" style="font-size:18px;">' + rec.wins + 'W-' + rec.losses + 'L-' + (rec.ko || 0) + 'KO</div></div>';
+    html += '<div class="stat-card"><h3>🪙 Монеты</h3><div class="stat-value">🪙' + (f.coins || 0) + '</div></div>';
     html += '</div>';
-    html += '<h3 style="margin-top:15px;">Навыки</h3><div class="stat-grid">';
+    html += '<h3 style="margin-top:15px;">🥊 Навыки</h3><div class="stat-grid">';
     html += '<div class="stat-card"><h3>Бокс</h3><div class="stat-value">' + (f.boxing || 0) + '</div></div>';
     html += '<div class="stat-card"><h3>Борьба</h3><div class="stat-value">' + (f.wrestling || 0) + '</div></div>';
     html += '<div class="stat-card"><h3>Самбишн</h3><div class="stat-value">' + (f.submission || 0) + '</div></div>';
@@ -89,19 +132,68 @@ function renderFighterOverview(f) {
     html += '<div class="stat-card"><h3>Выносливость</h3><div class="stat-value">' + (f.stamina || 0) + '</div></div>';
     html += '<div class="stat-card"><h3>Сила</h3><div class="stat-value">' + (f.strength || 0) + '</div></div>';
     html += '</div>';
+    if (f.currentPromotionId) {
+        var promo = null;
+        for (var i = 0; i < gameData.promotions.length; i++) {
+            if (gameData.promotions[i].id === f.currentPromotionId) { promo = gameData.promotions[i]; break; }
+        }
+        if (promo) html += '<p style="margin-top:10px;color:var(--green);">✅ В ростере: <strong>' + promo.name + '</strong></p>';
+    } else {
+        html += '<p style="margin-top:10px;color:var(--red);">❌ Нет промоушна. Подайте заявку во вкладке "Промоушны".</p>';
+    }
+    html += '<button class="btn btn-green btn-large" onclick="saveCareerLocally();alert(\'Карьера сохранена!\');">💾 Сохранить карьеру</button>';
     return html;
 }
 
 function renderAllFightersFull() {
     var fighters = gameData.fighters;
     var html = '<h2>👥 Все бойцы (' + fighters.length + ')</h2>';
-    html += '<table class="data-table"><thead><tr><th>Боец</th><th>Страна</th><th>Стиль</th><th>Рекорд</th><th>Хайп</th><th>Прайм</th></tr></thead><tbody>';
-    fighters.forEach(function(f) {
+    html += '<table class="data-table"><thead><tr><th>Боец</th><th>Страна</th><th>Стиль</th><th>Рекорд</th><th>Хайп</th><th>Действие</th></tr></thead><tbody>';
+    for (var i = 0; i < fighters.length; i++) {
+        var f = fighters[i];
         var rec = f.records || { wins: 0, losses: 0 };
-        html += '<tr><td><strong>' + f.fullName + '</strong>' + (f.isBot ? ' 🤖' : '') + '</td><td>' + f.country + '</td><td>' + f.baseStyle + '</td><td>' + rec.wins + '-' + rec.losses + '</td><td>' + (f.hype || 0) + '</td><td>' + (f.prime || 0) + '</td></tr>';
-    });
+        html += '<tr><td><strong>' + f.fullName + '</strong>' + (f.isBot ? ' 🤖' : '') + '</td><td>' + f.country + '</td><td>' + f.baseStyle + '</td><td>' + rec.wins + '-' + rec.losses + '</td><td>' + (f.hype || 0) + '</td><td>';
+        if (myMode === 'promoter' && f.id !== (findMyPromotion() ? findMyPromotion().ownerId : null)) {
+            var promo = findMyPromotion();
+            if (promo && promo.roster && promo.roster.indexOf(f.id) === -1) {
+                html += '<button class="btn btn-primary btn-small" onclick="signFighter(\'' + f.id + '\')">Подписать</button>';
+            } else if (promo && promo.roster && promo.roster.indexOf(f.id) !== -1) {
+                html += '<span class="badge badge-green">В ростере</span>';
+            }
+        }
+        html += '</td></tr>';
+    }
     html += '</tbody></table>';
     return html;
+}
+
+// ============================================
+// ПОДПИСАНИЕ БОЙЦА (для менеджера)
+// ============================================
+function signFighter(fighterId) {
+    var p = findMyPromotion();
+    if (!p) { alert('Сначала создайте промоушн!'); return; }
+    var f = null;
+    for (var i = 0; i < gameData.fighters.length; i++) {
+        if (gameData.fighters[i].id === fighterId) { f = gameData.fighters[i]; break; }
+    }
+    if (!f) return;
+    var amount = parseInt(prompt('Сумма контракта для ' + f.fullName + ':\nСлабый: 10-50 | Средний: 50-150 | Сильный: 150-300'));
+    if (!amount || amount <= 0 || p.budget < amount) { alert('Недостаточно средств или неверная сумма!'); return; }
+
+    p.budget -= amount;
+    p.expenses = (p.expenses || 0) + amount;
+    if (!p.roster) p.roster = [];
+    p.roster.push(f.id);
+    f.currentPromotionId = p.id;
+    f.coins = (f.coins || 0) + amount;
+
+    if (socket) {
+        socket.emit('updateFighter', f);
+        socket.emit('updatePromotion', p);
+    }
+    showTab('allfighters');
+    alert(f.fullName + ' подписан за 🪙' + amount + '!');
 }
 
 // ============================================
@@ -113,7 +205,7 @@ function renderTraining() {
 
     var skills = ['boxing','wrestling','submission','kick','speed','stamina','strength'];
     var names = ['Бокс','Борьба','Самбишн','Удар ногой','Скорость','Выносливость','Сила'];
-    var html = '<h2>🏋️ Тренировки</h2><p style="color:var(--text2);">Энергия: ' + (f.energy || 100) + '/' + (f.maxEnergy || 100) + ' | Тренировка: -10 энергии | КД: 2 часа на навык</p><div class="stat-grid">';
+    var html = '<h2>🏋️ Тренировки</h2><p style="color:var(--text2);">⚡ Энергия: ' + (f.energy || 100) + '/' + (f.maxEnergy || 100) + ' | Тренировка: -10 энергии | КД: 2 часа</p><div class="stat-grid">';
 
     var now = Date.now();
     for (var i = 0; i < skills.length; i++) {
@@ -122,7 +214,7 @@ function renderTraining() {
         var key = f.id + '_' + skills[i];
         if (lastTrainTime[key] && (now - lastTrainTime[key]) < 7200000) {
             canTrain = false;
-            cdText = '<br><span style="color:var(--red);font-size:10px;">Доступно через ' + Math.ceil((7200000 - (now - lastTrainTime[key])) / 60000) + ' мин</span>';
+            cdText = '<br><span style="color:var(--red);font-size:10px;">КД: ' + Math.ceil((7200000 - (now - lastTrainTime[key])) / 60000) + ' мин</span>';
         }
         html += '<div class="stat-card"><h3>' + names[i] + '</h3><div class="stat-value">' + (f[skills[i]] || 0) + '</div>' + cdText + '<button class="btn btn-small" ' + (!canTrain ? 'disabled style="opacity:0.4;"' : '') + ' onclick="trainSkill(\'' + skills[i] + '\')">+1</button></div>';
     }
@@ -132,10 +224,10 @@ function renderTraining() {
 
 function trainSkill(skill) {
     var f = findMyFighter();
-    if (!f || (f.energy || 100) < 10) return;
+    if (!f || (f.energy || 100) < 10) { alert('Недостаточно энергии!'); return; }
     var now = Date.now();
     var key = f.id + '_' + skill;
-    if (lastTrainTime[key] && (now - lastTrainTime[key]) < 7200000) return;
+    if (lastTrainTime[key] && (now - lastTrainTime[key]) < 7200000) { alert('Подождите, навык на перезарядке!'); return; }
 
     f[skill] = Math.min(100, (f[skill] || 0) + 1);
     f.energy = Math.max(0, (f.energy || 100) - 10);
@@ -143,6 +235,7 @@ function trainSkill(skill) {
     lastTrainTime[key] = now;
 
     if (socket) socket.emit('updateFighter', f);
+    saveCareerLocally();
     showTab('training');
 }
 
@@ -150,11 +243,11 @@ function trainSkill(skill) {
 // БОИ
 // ============================================
 var fightTemplates = {
-    box: ['{a} выбрасывает мощный джеб!', '{a} бьёт точный кросс! {d} пошатнулся!', '{a} работает серией по корпусу.'],
-    wrestle: ['{a} проходит в ноги!', '{a} прижимает {d} к сетке.', '{a} выполняет тейкдаун! {d} на спине!'],
-    kick: ['{a} бьёт хай-кик!', '{a} наносит лоу-кик по ноге {d}.', '{a} пробивает мидл-кик в корпус.'],
-    submission: ['{a} пытается выйти на болевой!', '{a} ищет удушающий! {d} защищается.', '{a} забрал спину!'],
-    defense: ['{d} отлично защищается!', '{d} уходит от ударов.', '{d} блокирует проход.']
+    box: ['{a} выбрасывает мощный джеб!', '{a} бьёт точный кросс! {d} пошатнулся!', '{a} работает серией по корпусу.', '{a} наносит хук слева!'],
+    wrestle: ['{a} проходит в ноги!', '{a} прижимает {d} к сетке.', '{a} выполняет тейкдаун! {d} на спине!', '{a} контролирует в партере.'],
+    kick: ['{a} бьёт хай-кик!', '{a} наносит лоу-кик по ноге {d}.', '{a} пробивает мидл-кик в корпус.', '{a} комбинирует руки и ноги!'],
+    submission: ['{a} пытается выйти на болевой!', '{a} ищет удушающий! {d} защищается.', '{a} забрал спину!', '{a} плотно держит позицию.'],
+    defense: ['{d} отлично защищается!', '{d} уходит от ударов.', '{d} блокирует проход.', '{d} контратакует!']
 };
 
 function getCommentary(a, d, type) {
@@ -166,16 +259,26 @@ function renderFights() {
     var f = findMyFighter();
     if (!f) return '<p style="color:var(--text2);">Создайте бойца!</p>';
     var rec = f.records || { wins: 0, losses: 0 };
-    var html = '<h2>🥊 Бои</h2><p style="color:var(--text2);">Ваш рекорд: ' + rec.wins + 'W-' + rec.losses + 'L</p><p style="color:var(--text2);">Выберите соперника:</p>';
-    html += '<div class="stat-grid">';
-    var opponents = gameData.fighters.filter(function(o) { return o.id !== f.id && !o.retired; });
+    var html = '<h2>🥊 Бои</h2><p style="color:var(--text2);">Ваш рекорд: <strong>' + rec.wins + 'W-' + rec.losses + 'L-' + (rec.ko || 0) + 'KO</strong></p>';
+    html += '<p style="color:var(--text2);">Выберите соперника:</p><div class="stat-grid">';
+
+    var opponents = [];
+    for (var i = 0; i < gameData.fighters.length; i++) {
+        if (gameData.fighters[i].id !== f.id && !gameData.fighters[i].retired) {
+            opponents.push(gameData.fighters[i]);
+        }
+    }
+
     if (opponents.length === 0) {
         html += '<p style="color:var(--text2);">Нет доступных соперников.</p>';
     } else {
-        opponents.slice(0, 12).forEach(function(o) {
+        for (var i = 0; i < Math.min(opponents.length, 12); i++) {
+            var o = opponents[i];
             var orec = o.records || { wins: 0, losses: 0 };
-            html += '<div class="stat-card"><h3>' + o.fullName + (o.isBot ? ' 🤖' : '') + '</h3><p style="font-size:11px;">' + o.baseStyle + ' | ' + orec.wins + '-' + orec.losses + ' | Хайп: ' + (o.hype || 0) + '</p><button class="btn btn-primary btn-small" onclick="startFight(\'' + o.id + '\')">Драться</button></div>';
-        });
+            html += '<div class="stat-card"><h3>' + o.fullName + (o.isBot ? ' 🤖' : '') + '</h3>';
+            html += '<p style="font-size:12px;">' + o.baseStyle + ' | ' + orec.wins + '-' + orec.losses + ' | Хайп: ' + (o.hype || 0) + '</p>';
+            html += '<button class="btn btn-primary btn-small" onclick="startFight(\'' + o.id + '\')">⚔️ Драться</button></div>';
+        }
     }
     html += '</div>';
     return html;
@@ -183,7 +286,17 @@ function renderFights() {
 
 function startFight(oppId) {
     var area = document.getElementById('content-area');
-    area.innerHTML = '<h2>🥊 Тактика на бой</h2><select id="fight-tactic" class="input" style="margin:10px 0;"><option value="balance">⚖️ Баланс</option><option value="box">🥊 Боксировать</option><option value="wrestle">🤼 Бороться</option><option value="counter_box">🛡️ Контр-атаки + Бокс</option><option value="counter_wrestle">🛡️ Контр-атаки + Борьба</option></select><button class="btn btn-primary btn-large" onclick="watchFight(\'' + oppId + '\')">👀 Смотреть бой</button><button class="btn btn-large" onclick="skipFight(\'' + oppId + '\')" style="margin-top:5px;">⏩ Пропустить</button>';
+    if (!area) return;
+    area.innerHTML = '<h2>🥊 Тактика на бой</h2>' +
+        '<select id="fight-tactic" class="input" style="margin:10px 0;">' +
+        '<option value="balance">⚖️ Баланс</option>' +
+        '<option value="box">🥊 Боксировать</option>' +
+        '<option value="wrestle">🤼 Бороться</option>' +
+        '<option value="counter_box">🛡️ Контр-атаки + Бокс</option>' +
+        '<option value="counter_wrestle">🛡️ Контр-атаки + Борьба</option>' +
+        '</select>' +
+        '<button class="btn btn-primary btn-large" onclick="watchFight(\'' + oppId + '\')">👀 Смотреть бой</button>' +
+        '<button class="btn btn-large" onclick="skipFight(\'' + oppId + '\')" style="margin-top:5px;">⏩ Пропустить</button>';
 }
 
 function resolveFight(oppId, tactic) {
@@ -195,6 +308,7 @@ function resolveFight(oppId, tactic) {
     if (!f || !o) return null;
 
     var oppTactic = o.tactic || ['balance','box','wrestle'][Math.floor(Math.random() * 3)];
+
     var s1 = 0, s2 = 0;
     if (tactic === 'box') s1 = (f.boxing||0) * 2 + (f.speed||0) + (f.strength||0);
     else if (tactic === 'wrestle') s1 = (f.wrestling||0) * 2 + (f.strength||0) + (f.submission||0);
@@ -213,7 +327,7 @@ function resolveFight(oppId, tactic) {
     s1 *= (f.energy||100)/100;
     s2 *= (o.energy||100)/100;
 
-    var commentary = ['🥊 ' + f.fullName + ' (' + tactic + ') vs ' + o.fullName + ' (' + oppTactic + ')'];
+    var commentary = ['🥊 ' + f.fullName + ' (тактика: ' + tactic + ') vs ' + o.fullName + ' (тактика: ' + oppTactic + ')'];
     var rounds = 5 + Math.floor(Math.random() * 4);
     for (var r = 0; r < rounds; r++) {
         var actor = Math.random() < (s1/(s1+s2)) ? f : o;
@@ -230,34 +344,44 @@ function resolveFight(oppId, tactic) {
     if (ko && won) commentary.push('💥 НОКАУТ! ' + f.fullName + ' побеждает!');
     else if (ko && !won) commentary.push('💥 НОКАУТ! ' + o.fullName + ' побеждает!');
     else if (won) commentary.push('🏆 ' + f.fullName + ' побеждает решением судей!');
-    else commentary.push('🏆 ' + o.fullName + ' побеждает решением судей!');
+    else commentary.push('💔 ' + o.fullName + ' побеждает решением судей!');
 
     return { winner: won ? f : o, loser: won ? o : f, ko: ko, commentary: commentary };
 }
 
 function watchFight(oppId) {
-    var tactic = document.getElementById('fight-tactic').value;
+    var tacticEl = document.getElementById('fight-tactic');
+    if (!tacticEl) return;
+    var tactic = tacticEl.value;
     var result = resolveFight(oppId, tactic);
     if (!result) return;
+
     var area = document.getElementById('content-area');
     area.innerHTML = '<h2>🥊 Бой</h2><div class="fight-log" id="fight-log"></div>';
     var i = 0;
-    function next() {
+
+    function nextLine() {
         if (i < result.commentary.length) {
-            document.getElementById('fight-log').innerHTML += '<p>' + result.commentary[i] + '</p>';
-            document.getElementById('fight-log').scrollTop = document.getElementById('fight-log').scrollHeight;
+            var log = document.getElementById('fight-log');
+            if (log) {
+                log.innerHTML += '<p>' + result.commentary[i] + '</p>';
+                log.scrollTop = log.scrollHeight;
+            }
             i++;
-            setTimeout(next, 2000);
+            setTimeout(nextLine, 2000);
         } else {
             applyFightResult(result);
+            area.innerHTML += '<p style="font-size:18px;margin-top:10px;">' + (result.winner.id === findMyFighter().id ? '🏆 ПОБЕДА!' : '💔 ПОРАЖЕНИЕ') + '</p>';
             area.innerHTML += '<button class="btn btn-primary btn-large" onclick="showTab(\'fights\')">Продолжить</button>';
         }
     }
-    setTimeout(next, 500);
+    setTimeout(nextLine, 500);
 }
 
 function skipFight(oppId) {
-    var tactic = document.getElementById('fight-tactic').value;
+    var tacticEl = document.getElementById('fight-tactic');
+    if (!tacticEl) return;
+    var tactic = tacticEl.value;
     var result = resolveFight(oppId, tactic);
     if (!result) return;
     applyFightResult(result);
@@ -281,6 +405,7 @@ function applyFightResult(result) {
     w.coins = (w.coins || 0) + Math.floor(Math.random() * 150) + 50;
     l.coins = (l.coins || 0) + Math.floor(Math.random() * 30) + 10;
     if (socket) { socket.emit('updateFighter', w); socket.emit('updateFighter', l); }
+    saveCareerLocally();
 }
 
 // ============================================
@@ -289,57 +414,19 @@ function applyFightResult(result) {
 function renderShop() {
     var f = findMyFighter();
     if (!f) return '<p style="color:var(--text2);">Создайте бойца!</p>';
-    var html = '<h2>🛒 Магазин</h2><p style="margin-bottom:15px;">Ваши монеты: 🪙 <strong>' + (f.coins || 0) + '</strong></p>';
-    html += '<div class="stat-grid">';
-    html += '<div class="stat-card"><h3>Прозвище</h3><p style="font-size:12px;">Уникальное прозвище</p><p>🪙 1000</p><button class="btn btn-gold btn-small" onclick="buyNickname()">Купить</button></div>';
-    html += '<div class="stat-card"><h3>Дорогая вещь</h3><p style="font-size:12px;">+10 к хайпу</p><p>🪙 1500</p><button class="btn btn-gold btn-small" onclick="buyItem()">Купить</button></div>';
-    html += '<div class="stat-card"><h3>Пожертвование</h3><p style="font-size:12px;">+5 к хайпу</p><p>🪙 1000</p><button class="btn btn-green btn-small" onclick="buyDonation()">Купить</button></div>';
-    html += '<div class="stat-card"><h3>Именные шорты</h3><p style="font-size:12px;">+3 к хайпу</p><p>🪙 500</p><button class="btn btn-green btn-small" onclick="buyShorts()">Купить</button></div>';
+    var html = '<h2>🛒 Магазин</h2><p style="margin-bottom:15px;">Ваши монеты: 🪙 <strong>' + (f.coins || 0) + '</strong></p><div class="stat-grid">';
+    html += '<div class="stat-card"><h3>Прозвище</h3><p>🪙 1000</p><button class="btn btn-gold btn-small" onclick="buyNickname()">Купить</button></div>';
+    html += '<div class="stat-card"><h3>Вещь (+10 хайп)</h3><p>🪙 1500</p><button class="btn btn-gold btn-small" onclick="buyItem()">Купить</button></div>';
+    html += '<div class="stat-card"><h3>Пожертвование (+5 хайп)</h3><p>🪙 1000</p><button class="btn btn-green btn-small" onclick="buyDonation()">Купить</button></div>';
+    html += '<div class="stat-card"><h3>Шорты (+3 хайп)</h3><p>🪙 500</p><button class="btn btn-green btn-small" onclick="buyShorts()">Купить</button></div>';
     html += '</div>';
     return html;
 }
 
-function buyNickname() {
-    var f = findMyFighter();
-    if (!f || (f.coins || 0) < 1000) { alert('Недостаточно монет!'); return; }
-    var nick = prompt('Введите прозвище:');
-    if (!nick) return;
-    f.coins -= 1000;
-    f.nickname = nick;
-    if (socket) socket.emit('updateFighter', f);
-    showTab('shop');
-    alert('Прозвище "' + nick + '" куплено!');
-}
-
-function buyItem() {
-    var f = findMyFighter();
-    if (!f || (f.coins || 0) < 1500) { alert('Недостаточно монет!'); return; }
-    f.coins -= 1500;
-    f.hype = Math.min(100, (f.hype || 0) + 10);
-    if (socket) socket.emit('updateFighter', f);
-    showTab('shop');
-    alert('Вещь куплена! +10 к хайпу.');
-}
-
-function buyDonation() {
-    var f = findMyFighter();
-    if (!f || (f.coins || 0) < 1000) { alert('Недостаточно монет!'); return; }
-    f.coins -= 1000;
-    f.hype = Math.min(100, (f.hype || 0) + 5);
-    if (socket) socket.emit('updateFighter', f);
-    showTab('shop');
-    alert('Пожертвование сделано! +5 к хайпу.');
-}
-
-function buyShorts() {
-    var f = findMyFighter();
-    if (!f || (f.coins || 0) < 500) { alert('Недостаточно монет!'); return; }
-    f.coins -= 500;
-    f.hype = Math.min(100, (f.hype || 0) + 3);
-    if (socket) socket.emit('updateFighter', f);
-    showTab('shop');
-    alert('Именные шорты куплены! +3 к хайпу.');
-}
+function buyNickname() { var f = findMyFighter(); if (!f || (f.coins||0) < 1000) { alert('Недостаточно монет!'); return; } var n = prompt('Прозвище:'); if (!n) return; f.coins -= 1000; f.nickname = n; if (socket) socket.emit('updateFighter', f); saveCareerLocally(); showTab('shop'); alert('Куплено!'); }
+function buyItem() { var f = findMyFighter(); if (!f || (f.coins||0) < 1500) { alert('Недостаточно монет!'); return; } f.coins -= 1500; f.hype = Math.min(100, (f.hype||0) + 10); if (socket) socket.emit('updateFighter', f); saveCareerLocally(); showTab('shop'); alert('+10 хайпа!'); }
+function buyDonation() { var f = findMyFighter(); if (!f || (f.coins||0) < 1000) { alert('Недостаточно монет!'); return; } f.coins -= 1000; f.hype = Math.min(100, (f.hype||0) + 5); if (socket) socket.emit('updateFighter', f); saveCareerLocally(); showTab('shop'); alert('+5 хайпа!'); }
+function buyShorts() { var f = findMyFighter(); if (!f || (f.coins||0) < 500) { alert('Недостаточно монет!'); return; } f.coins -= 500; f.hype = Math.min(100, (f.hype||0) + 3); if (socket) socket.emit('updateFighter', f); saveCareerLocally(); showTab('shop'); alert('+3 хайпа!'); }
 
 // ============================================
 // ВОССТАНОВЛЕНИЕ ЭНЕРГИИ
