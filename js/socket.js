@@ -20,9 +20,7 @@ var lastTrainTime = {};
 // НАВИГАЦИЯ
 // ============================================
 function showScreen(id) {
-    document.querySelectorAll('.screen').forEach(function(s) {
-        s.classList.remove('active');
-    });
+    document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
     var el = document.getElementById(id);
     if (el) el.classList.add('active');
 }
@@ -30,16 +28,13 @@ function showScreen(id) {
 function goToMenu() {
     myMode = null;
     showScreen('menu');
-    renderAllFightersPreview();
+    updateSaveSlotsInfo();
 }
 
 function showCreator(type) {
-    if (type === 'fighter') {
-        showScreen('fighter-creator');
-        updatePreviewStats();
-    } else {
-        showScreen('promotion-creator');
-    }
+    if (type === 'fighter') showScreen('fighter-creator');
+    else showScreen('promotion-creator');
+    if (type === 'fighter') updatePreviewStats();
 }
 
 function logout() {
@@ -51,22 +46,106 @@ function logout() {
 }
 
 // ============================================
+// СОХРАНЕНИЯ (слоты)
+// ============================================
+function updateSaveSlotsInfo() {
+    var container = document.getElementById('save-slots-info');
+    if (!container) return;
+    var html = '<h3 style="margin-top:15px;">💾 Слоты сохранений</h3>';
+    
+    // Слот бойца
+    var careerData = localStorage.getItem('ps_career_slot');
+    if (careerData) {
+        try {
+            var save = JSON.parse(careerData);
+            var f = save.fighter;
+            var d = new Date(save.timestamp).toLocaleString('ru');
+            html += '<div class="stat-card" style="cursor:pointer;margin:5px 0;" onclick="loadCareerSlot()">';
+            html += '<strong>👤 Карьера бойца:</strong> ' + f.fullName + '<br>';
+            html += '<span style="color:var(--text2);font-size:12px;">Сохранено: ' + d + '</span>';
+            html += '</div>';
+        } catch(e) {}
+    } else {
+        html += '<div class="stat-card" style="margin:5px 0;"><span style="color:var(--text2);">👤 Слот бойца пуст</span></div>';
+    }
+    
+    // Слот промоутера
+    var promoData = localStorage.getItem('ps_promoter_slot');
+    if (promoData) {
+        try {
+            var save = JSON.parse(promoData);
+            var p = save.promotion;
+            var d = new Date(save.timestamp).toLocaleString('ru');
+            html += '<div class="stat-card" style="cursor:pointer;margin:5px 0;" onclick="loadPromotionSlot()">';
+            html += '<strong>🏢 Промоутер:</strong> ' + p.name + '<br>';
+            html += '<span style="color:var(--text2);font-size:12px;">Сохранено: ' + d + '</span>';
+            html += '</div>';
+        } catch(e) {}
+    } else {
+        html += '<div class="stat-card" style="margin:5px 0;"><span style="color:var(--text2);">🏢 Слот менеджера пуст</span></div>';
+    }
+    
+    container.innerHTML = html;
+}
+
+function loadCareerSlot() {
+    var data = localStorage.getItem('ps_career_slot');
+    if (!data) return;
+    var save = JSON.parse(data);
+    autoConnect(save.fighter.fullName);
+    setTimeout(function() {
+        if (!socket || !myPlayer) return;
+        myPlayer.id = save.fighter.ownerId || myPlayer.id;
+        myMode = 'fighter';
+        // Восстанавливаем бойца в gameData
+        var exists = false;
+        for (var i = 0; i < gameData.fighters.length; i++) {
+            if (gameData.fighters[i].id === save.fighter.id) {
+                gameData.fighters[i] = save.fighter;
+                exists = true;
+                break;
+            }
+        }
+        if (!exists) gameData.fighters.push(save.fighter);
+        lastTrainTime = save.lastTrainTime || {};
+        showScreen('dashboard');
+        buildSidebarNav();
+        showTab('overview');
+    }, 800);
+}
+
+function loadPromotionSlot() {
+    var data = localStorage.getItem('ps_promoter_slot');
+    if (!data) return;
+    var save = JSON.parse(data);
+    autoConnect(save.promotion.name + ' Manager');
+    setTimeout(function() {
+        if (!socket || !myPlayer) return;
+        myMode = 'promoter';
+        var exists = false;
+        for (var i = 0; i < gameData.promotions.length; i++) {
+            if (gameData.promotions[i].id === save.promotion.id) {
+                gameData.promotions[i] = save.promotion;
+                exists = true;
+                break;
+            }
+        }
+        if (!exists) gameData.promotions.push(save.promotion);
+        showScreen('dashboard');
+        buildSidebarNav();
+        showTab('overview');
+    }, 800);
+}
+
+// ============================================
 // АВТОПОДКЛЮЧЕНИЕ
 // ============================================
 function autoConnect(name) {
     myPlayer = { name: name, id: null };
-
-    if (socket && socket.connected) {
-        socket.emit('register', { name: name });
-        return;
-    }
-
+    if (socket && socket.connected) { socket.emit('register', { name: name }); return; }
     socket = io();
 
-    socket.on('connect', function() {
-        socket.emit('register', { name: name });
-    });
-
+    socket.on('connect', function() { socket.emit('register', { name: name }); });
     socket.on('registered', function(data) {
         myPlayer.id = data.id;
         document.getElementById('sidebar-name').textContent = name;
@@ -75,7 +154,6 @@ function autoConnect(name) {
         showScreen('dashboard');
         showTab('overview');
     });
-
     socket.on('serverState', function(data) {
         gameData.fighters = data.fighters || [];
         gameData.promotions = data.promotions || [];
@@ -84,60 +162,34 @@ function autoConnect(name) {
         gameData.events = data.events || [];
         gameData.onlineCount = data.onlineCount || 0;
         updateOnlineCount();
-        renderAllFightersPreview();
         renderChatMessages();
         updateMailBadge();
-        if (document.getElementById('dashboard').classList.contains('active')) {
-            showTab(currentTab);
-        }
+        updateSaveSlotsInfo();
+        if (document.getElementById('dashboard').classList.contains('active')) showTab(currentTab);
     });
-
     socket.on('playerJoined', function(data) {
         gameData.onlineCount = data.onlineCount;
         updateOnlineCount();
-        addChatMessage({
-            from: 'Система',
-            text: data.message,
-            system: true,
-            time: new Date().toISOString()
-        });
+        addChatMessage({ from: 'Система', text: data.message, system: true, time: new Date().toISOString() });
     });
-
     socket.on('playerLeft', function(data) {
         gameData.onlineCount = data.onlineCount;
         updateOnlineCount();
-        addChatMessage({
-            from: 'Система',
-            text: data.message,
-            system: true,
-            time: new Date().toISOString()
-        });
+        addChatMessage({ from: 'Система', text: data.message, system: true, time: new Date().toISOString() });
     });
-
-    socket.on('newMessage', function(msg) {
-        addChatMessage(msg);
-    });
-
+    socket.on('newMessage', function(msg) { addChatMessage(msg); });
     socket.on('fighterCreated', function(fighter) {
         gameData.fighters.push(fighter);
-        if (document.getElementById('dashboard').classList.contains('active')) {
-            showTab(currentTab);
-        }
-        renderAllFightersPreview();
+        if (document.getElementById('dashboard').classList.contains('active')) showTab(currentTab);
     });
-
     socket.on('promotionCreated', function(promo) {
         gameData.promotions.push(promo);
-        if (document.getElementById('dashboard').classList.contains('active') && currentTab === 'promotions') {
-            showTab('promotions');
-        }
+        if (document.getElementById('dashboard').classList.contains('active') && currentTab === 'promotions') showTab('promotions');
     });
-
     socket.on('notification', function(notif) {
         gameData.notifications.unshift(notif);
         updateMailBadge();
     });
-
     socket.on('disconnect', function() {
         document.getElementById('sidebar-info').textContent = 'Отключено';
     });
@@ -158,7 +210,7 @@ function buildSidebarNav() {
     if (!nav) return;
     var html = '';
     html += '<button class="nav-btn active" onclick="showTab(\'overview\')">📊 Обзор</button>';
-    html += '<button class="nav-btn" onclick="showTab(\'allfighters\')">👥 Все бойцы</button>';
+    html += '<button class="nav-btn" onclick="showTab(\'allfighters\')">👥 Бойцы</button>';
     html += '<button class="nav-btn" onclick="showTab(\'promotions\')">🏢 Промоушны</button>';
     if (myMode === 'fighter') {
         html += '<button class="nav-btn" onclick="showTab(\'training\')">🏋️ Тренировки</button>';
@@ -166,7 +218,7 @@ function buildSidebarNav() {
         html += '<button class="nav-btn" onclick="showTab(\'shop\')">🛒 Магазин</button>';
     }
     if (myMode === 'promoter') {
-        html += '<button class="nav-btn" onclick="showTab(\'myroster\')">📋 Мой ростер</button>';
+        html += '<button class="nav-btn" onclick="showTab(\'myroster\')">📋 Ростер</button>';
         html += '<button class="nav-btn" onclick="showTab(\'events\')">📅 Карды</button>';
         html += '<button class="nav-btn" onclick="showTab(\'finances\')">💰 Финансы</button>';
     }
@@ -181,23 +233,19 @@ function showTab(tab) {
         nav.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
         var buttons = nav.querySelectorAll('.nav-btn');
         for (var i = 0; i < buttons.length; i++) {
-            if (buttons[i].textContent.toLowerCase().includes(tab.toLowerCase())) {
-                buttons[i].classList.add('active');
-            }
+            if (buttons[i].textContent.toLowerCase().includes(tab.toLowerCase())) buttons[i].classList.add('active');
         }
     }
     renderTabContent(tab);
 }
 
 // ============================================
-// ПОИСК ИГРОКА
+// ПОИСК
 // ============================================
 function findMyFighter() {
     if (!myPlayer) return null;
     for (var i = 0; i < gameData.fighters.length; i++) {
-        if (gameData.fighters[i].ownerId === myPlayer.id && !gameData.fighters[i].isBot) {
-            return gameData.fighters[i];
-        }
+        if (gameData.fighters[i].ownerId === myPlayer.id && !gameData.fighters[i].isBot) return gameData.fighters[i];
     }
     return null;
 }
@@ -205,31 +253,16 @@ function findMyFighter() {
 function findMyPromotion() {
     if (!myPlayer) return null;
     for (var i = 0; i < gameData.promotions.length; i++) {
-        if (gameData.promotions[i].ownerId === myPlayer.id && !gameData.promotions[i].isAI) {
-            return gameData.promotions[i];
-        }
+        if (gameData.promotions[i].ownerId === myPlayer.id && !gameData.promotions[i].isAI) return gameData.promotions[i];
     }
     return null;
 }
 
-// ============================================
-// ТАБЛИЦЫ (общие)
-// ============================================
-function renderAllFightersPreview() {
-    var container = document.getElementById('all-fighters-preview');
-    if (!container) return;
-    var fighters = gameData.fighters.slice(0, 10);
-    var html = '<h3 style="font-size:14px;margin-bottom:10px;">👥 Бойцы в мире (' + gameData.fighters.length + ')</h3>';
-    if (fighters.length === 0) {
-        html += '<p style="color:var(--text2);">Нет бойцов</p>';
-    } else {
-        html += '<table class="data-table"><thead><tr><th>Боец</th><th>Стиль</th><th>Страна</th><th>Хайп</th></tr></thead><tbody>';
-        fighters.forEach(function(f) {
-            html += '<tr><td><strong>' + f.fullName + '</strong>' + (f.isBot ? ' 🤖' : '') + '</td><td>' + f.baseStyle + '</td><td>' + f.country + '</td><td>' + (f.hype || 0) + '</td></tr>';
-        });
-        html += '</tbody></table>';
+function findFighterById(id) {
+    for (var i = 0; i < gameData.fighters.length; i++) {
+        if (gameData.fighters[i].id === id) return gameData.fighters[i];
     }
-    container.innerHTML = html;
+    return null;
 }
 
 // ============================================
@@ -242,12 +275,12 @@ function renderTabContent(tab) {
     if (tab === 'overview') {
         if (myMode === 'fighter') {
             var f = findMyFighter();
-            area.innerHTML = f ? renderFighterOverview(f) : '<h2>📊 Обзор</h2><p style="color:var(--text2);">Создайте бойца!</p>';
+            area.innerHTML = f ? renderFighterOverview(f) : '<p style="color:var(--text2);">Создайте бойца через главное меню.</p>';
         } else if (myMode === 'promoter') {
             var p = findMyPromotion();
-            area.innerHTML = p ? renderPromotionOverview(p) : '<h2>📊 Обзор</h2><p style="color:var(--text2);">Создайте промоушн!</p>';
+            area.innerHTML = p ? renderPromotionOverview(p) : '<p style="color:var(--text2);">Создайте промоушн через главное меню.</p>';
         } else {
-            area.innerHTML = '<h2>📊 Обзор</h2><p>Онлайн: ' + gameData.onlineCount + '</p><p>Бойцов: ' + gameData.fighters.length + '</p><p>Промоушнов: ' + gameData.promotions.length + '</p>';
+            area.innerHTML = '<p>Онлайн: ' + gameData.onlineCount + ' | Бойцов: ' + gameData.fighters.length + ' | Промоушнов: ' + gameData.promotions.length + '</p>';
         }
     } else if (tab === 'allfighters') {
         area.innerHTML = renderAllFightersFull();
@@ -268,4 +301,11 @@ function renderTabContent(tab) {
     } else if (tab === 'finances' && myMode === 'promoter') {
         area.innerHTML = renderMyFinances();
     }
-              }
+}
+
+// Запуск
+window.onload = function() {
+    showScreen('menu');
+    updateSaveSlotsInfo();
+    updateOnlineCount();
+};
