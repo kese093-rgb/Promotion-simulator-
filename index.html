@@ -987,6 +987,18 @@ setInterval(function() {
         f.energy = Math.min(f.maxEnergy || 100, (f.energy || 100) + 5);
     }
 }, 30000);
+        // Автосохранение при закрытии вкладки
+window.addEventListener('beforeunload', function() {
+    if (myMode === 'fighter') saveCareer();
+    if (myMode === 'promoter') savePromotion();
+});
+
+// Автосохранение каждые 30 секунд
+setInterval(function() {
+    if (myMode === 'fighter') saveCareer();
+    if (myMode === 'promoter') savePromotion();
+}, 30000);
+    </script>
     </script>
 </body>
 </html>
