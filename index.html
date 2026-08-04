@@ -52,6 +52,16 @@
         }
         .nav-btn:hover { background: #CC0000; color: white; }
         .nav-btn.active { background: #CC0000; color: white; }
+        .save-slot {
+            border: 2px solid #CC0000;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px auto;
+            max-width: 400px;
+            cursor: pointer;
+            text-align: left;
+        }
+        .save-slot:hover { background: #FFF0F0; }
     </style>
 </head>
 <body>
@@ -60,6 +70,7 @@
         <div class="logo">PROMOTION SIM</div>
         <button class="btn" onclick="showScreen('fighter-form')">👤 Создать бойца</button>
         <button class="btn" onclick="showScreen('promoter-form')">🏢 Создать промоушн</button>
+        <div id="save-slots" style="margin-top:20px;"></div>
     </div>
 
     <!-- СОЗДАНИЕ БОЙЦА -->
@@ -130,6 +141,59 @@
         var allFighters = [];
         var allPromotions = [];
 
+        function saveAll() {
+            localStorage.setItem('ps_fighters', JSON.stringify(allFighters));
+            localStorage.setItem('ps_promotions', JSON.stringify(allPromotions));
+            if (myFighter) localStorage.setItem('ps_myFighter', JSON.stringify(myFighter));
+            if (myPromotion) localStorage.setItem('ps_myPromotion', JSON.stringify(myPromotion));
+            updateSaveSlots();
+        }
+
+        function loadAll() {
+            var f = localStorage.getItem('ps_fighters');
+            var p = localStorage.getItem('ps_promotions');
+            var mf = localStorage.getItem('ps_myFighter');
+            var mp = localStorage.getItem('ps_myPromotion');
+            if (f) allFighters = JSON.parse(f);
+            if (p) allPromotions = JSON.parse(p);
+            if (mf) myFighter = JSON.parse(mf);
+            if (mp) myPromotion = JSON.parse(mp);
+            updateSaveSlots();
+        }
+
+        function updateSaveSlots() {
+            var container = document.getElementById('save-slots');
+            if (!container) return;
+            var html = '<h3 style="color:#CC0000;">💾 Сохранения</h3>';
+            if (myFighter) {
+                html += '<div class="save-slot" onclick="loadFighter()"><strong>👤 Боец:</strong> ' + myFighter.fullName + '<br><span style="color:#666;font-size:12px;">' + myFighter.country + ' | ' + myFighter.baseStyle + '</span></div>';
+            } else {
+                html += '<div class="save-slot" style="color:#999;">👤 Слот бойца пуст</div>';
+            }
+            if (myPromotion) {
+                html += '<div class="save-slot" onclick="loadPromotion()"><strong>🏢 Промоушн:</strong> ' + myPromotion.name + '<br><span style="color:#666;font-size:12px;">' + myPromotion.sport + ' | ' + myPromotion.country + '</span></div>';
+            } else {
+                html += '<div class="save-slot" style="color:#999;">🏢 Слот менеджера пуст</div>';
+            }
+            container.innerHTML = html;
+        }
+
+        function loadFighter() {
+            if (!myFighter) return;
+            document.getElementById('dash-name').textContent = myFighter.fullName;
+            document.getElementById('dash-info').textContent = myFighter.country + ' | ' + myFighter.baseStyle;
+            showScreen('fighter-dashboard');
+            showFighterTab('profile');
+        }
+
+        function loadPromotion() {
+            if (!myPromotion) return;
+            document.getElementById('promo-dash-name').textContent = myPromotion.name;
+            document.getElementById('promo-dash-sport').textContent = myPromotion.sport + ' | ' + myPromotion.country;
+            showScreen('promoter-dashboard');
+            showPromoterTab('profile');
+        }
+
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
@@ -150,6 +214,7 @@
                 records: { wins: 0, losses: 0, ko: 0 }, currentPromotionId: null
             };
             allFighters.push(myFighter);
+            saveAll();
             document.getElementById('dash-name').textContent = myFighter.fullName;
             document.getElementById('dash-info').textContent = myFighter.country + ' | ' + myFighter.baseStyle;
             showScreen('fighter-dashboard');
@@ -166,6 +231,7 @@
                 popularity: 30, roster: [], events: []
             };
             allPromotions.push(myPromotion);
+            saveAll();
             document.getElementById('promo-dash-name').textContent = myPromotion.name;
             document.getElementById('promo-dash-sport').textContent = myPromotion.sport + ' | ' + myPromotion.country;
             showScreen('promoter-dashboard');
@@ -230,13 +296,17 @@
             var parts = dateStr.split('.');
             var date = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
             myPromotion.events.push({ id: 'e_' + Date.now(), name: name, date: date.toISOString(), fights: [] });
+            saveAll();
             showPromoterTab('cards');
         }
 
         function signFighter(fid) {
             var f = allFighters.find(function(x) { return x.id === fid; });
-            if (f && myPromotion) { myPromotion.roster.push(f.id); f.currentPromotionId = myPromotion.id; alert(f.fullName + ' подписан!'); showPromoterTab('freefighters'); }
+            if (f && myPromotion) { myPromotion.roster.push(f.id); f.currentPromotionId = myPromotion.id; saveAll(); alert(f.fullName + ' подписан!'); showPromoterTab('freefighters'); }
         }
+
+        loadAll();
+        updateSaveSlots();
     </script>
 </body>
-  </html>
+    </html>
