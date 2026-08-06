@@ -302,7 +302,7 @@
                         var evt = p.events[i];
                         var eventDate = new Date(evt.date);
                         var isPast = eventDate <= now;
-                        var isLive = !isPast && (eventDate.getTime() - now.getTime() <= 30*60000);
+                        var isLive = !isPast && (eventDate.getTime() - now.getTime() <= 0);
                         h += '<div class="stat-card" style="'+ (isPast ? 'opacity:0.6;' : '') + (isLive ? 'border-color:var(--red);border-width:3px;' : '') +'">';
                         h += '<h3>'+evt.name + (isLive ? ' 🔴 ИДЁТ' : '') + (isPast ? ' ✓ Завершён' : '') +'</h3>';
                         h += '<p>'+eventDate.toLocaleString('ru',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})+' | Бои: '+evt.fights.length+'/3</p>';
