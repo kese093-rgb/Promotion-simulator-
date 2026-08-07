@@ -1,18 +1,30 @@
 const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
+const fs = require('fs');
 const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server);
 const PORT = process.env.PORT || 3000;
+const DATA_FILE = path.join(__dirname, 'data.json');
 
-let DB = {
-    fighters: [],
-    promotions: [],
-    onlineCount: 0
-};
+// Загрузка данных с диска
+let DB = { fighters: [], promotions: [], onlineCount: 0 };
+try {
+    if (fs.existsSync(DATA_FILE)) {
+        DB = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+        console.log('✅ Данные загружены. Бойцов:', DB.fighters.length);
+    }
+} catch(e) {
+    console.log('📦 Новая база');
+}
+
+// Сохранение на диск
+function saveDB() {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(DB, null, 2));
+}
 
 app.use(express.static(path.join(__dirname)));
 
@@ -35,12 +47,14 @@ io.on('connection', (socket) => {
     socket.on('createFighter', (data) => {
         const fighter = { ...data, ownerId: socket.id, isBot: false };
         DB.fighters.push(fighter);
+        saveDB();
         io.emit('fighterCreated', fighter);
     });
 
     socket.on('createPromotion', (data) => {
         const promo = { ...data, ownerId: socket.id, isAI: false };
         DB.promotions.push(promo);
+        saveDB();
         io.emit('promotionCreated', promo);
     });
 
@@ -53,6 +67,7 @@ io.on('connection', (socket) => {
                 promo.roster.push(fighter.id);
             }
             fighter.currentPromotionId = promo.id;
+            saveDB();
             io.emit('fighterUpdated', fighter);
             io.emit('promotionUpdated', promo);
         }
@@ -61,7 +76,13 @@ io.on('connection', (socket) => {
     socket.on('updateFighter', (data) => {
         const idx = DB.fighters.findIndex(f => f.id === data.id);
         if (idx !== -1) {
+            // Сохраняем currentPromotionId если он был
+            const oldPromoId = DB.fighters[idx].currentPromotionId;
             DB.fighters[idx] = { ...DB.fighters[idx], ...data };
+            if (!DB.fighters[idx].currentPromotionId && oldPromoId) {
+                DB.fighters[idx].currentPromotionId = oldPromoId;
+            }
+            saveDB();
             io.emit('fighterUpdated', DB.fighters[idx]);
         }
     });
@@ -69,17 +90,25 @@ io.on('connection', (socket) => {
     socket.on('updatePromotion', (data) => {
         const idx = DB.promotions.findIndex(p => p.id === data.id);
         if (idx !== -1) {
+            // Сохраняем roster если он был
+            const oldRoster = DB.promotions[idx].roster;
             DB.promotions[idx] = { ...DB.promotions[idx], ...data };
+            if (!DB.promotions[idx].roster && oldRoster) {
+                DB.promotions[idx].roster = oldRoster;
+            }
+            saveDB();
             io.emit('promotionUpdated', DB.promotions[idx]);
         }
     });
 
     socket.on('deleteFighter', (data) => {
         DB.fighters = DB.fighters.filter(f => f.ownerId !== data.playerId);
+        saveDB();
     });
 
     socket.on('deletePromotion', (data) => {
         DB.promotions = DB.promotions.filter(p => p.ownerId !== data.playerId);
+        saveDB();
     });
 
     socket.on('disconnect', () => {
