@@ -10,18 +10,18 @@ const io = socketIO(server);
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, 'data.json');
 
-// Загрузка данных с диска
-let DB = { fighters: [], promotions: [], onlineCount: 0 };
+let DB = { fighters: [], promotions: [], events: [], onlineCount: 0 };
+
 try {
     if (fs.existsSync(DATA_FILE)) {
         DB = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+        if (!DB.events) DB.events = [];
         console.log('✅ Данные загружены. Бойцов:', DB.fighters.length);
     }
 } catch(e) {
     console.log('📦 Новая база');
 }
 
-// Сохранение на диск
 function saveDB() {
     fs.writeFileSync(DATA_FILE, JSON.stringify(DB, null, 2));
 }
@@ -34,6 +34,7 @@ io.on('connection', (socket) => {
     socket.emit('serverState', {
         fighters: DB.fighters,
         promotions: DB.promotions,
+        events: DB.events,
         onlineCount: online.size
     });
 
@@ -76,7 +77,6 @@ io.on('connection', (socket) => {
     socket.on('updateFighter', (data) => {
         const idx = DB.fighters.findIndex(f => f.id === data.id);
         if (idx !== -1) {
-            // Сохраняем currentPromotionId если он был
             const oldPromoId = DB.fighters[idx].currentPromotionId;
             DB.fighters[idx] = { ...DB.fighters[idx], ...data };
             if (!DB.fighters[idx].currentPromotionId && oldPromoId) {
@@ -90,12 +90,11 @@ io.on('connection', (socket) => {
     socket.on('updatePromotion', (data) => {
         const idx = DB.promotions.findIndex(p => p.id === data.id);
         if (idx !== -1) {
-            // Сохраняем roster если он был
             const oldRoster = DB.promotions[idx].roster;
+            const oldEvents = DB.promotions[idx].events;
             DB.promotions[idx] = { ...DB.promotions[idx], ...data };
-            if (!DB.promotions[idx].roster && oldRoster) {
-                DB.promotions[idx].roster = oldRoster;
-            }
+            if (!DB.promotions[idx].roster && oldRoster) DB.promotions[idx].roster = oldRoster;
+            if (!DB.promotions[idx].events && oldEvents) DB.promotions[idx].events = oldEvents;
             saveDB();
             io.emit('promotionUpdated', DB.promotions[idx]);
         }
