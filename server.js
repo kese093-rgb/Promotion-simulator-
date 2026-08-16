@@ -54,6 +54,16 @@ io.on('connection', (socket) => {
         console.log('👤 Зарегистрирован:', name || 'Игрок');
     });
 
+    // Инициализация промоушнов (от первого клиента)
+    socket.on('initPromotions', (promotions) => {
+        if (DB.promotions.length === 0) {
+            DB.promotions = promotions;
+            saveDB();
+            io.emit('promotionsInitialized', DB.promotions);
+            console.log('🏆 Инициализированы промоушны');
+        }
+    });
+
     // Создание бойца
     socket.on('createFighter', (data) => {
         const fighter = { 
@@ -66,22 +76,6 @@ io.on('connection', (socket) => {
         saveDB();
         io.emit('fighterCreated', fighter);
         console.log('👊 Создан боец:', fighter.fullName);
-    });
-
-    // Создание промоушна
-    socket.on('createPromotion', (data) => {
-        const promo = { 
-            ...data, 
-            ownerId: socket.id, 
-            isAI: false,
-            roster: [],
-            events: [],
-            createdAt: new Date().toISOString()
-        };
-        DB.promotions.push(promo);
-        saveDB();
-        io.emit('promotionCreated', promo);
-        console.log('🏢 Создан промоушн:', promo.name);
     });
 
     // Подписание бойца
@@ -134,13 +128,6 @@ io.on('connection', (socket) => {
         DB.fighters = DB.fighters.filter(f => f.ownerId !== data.playerId);
         saveDB();
         console.log('🗑 Удалены бойцы игрока');
-    });
-
-    // Удаление промоушна
-    socket.on('deletePromotion', (data) => {
-        DB.promotions = DB.promotions.filter(p => p.ownerId !== data.playerId);
-        saveDB();
-        console.log('🗑 Удалены промоушны игрока');
     });
 
     // Отключение
