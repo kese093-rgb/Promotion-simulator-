@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Promotion Simulator Online</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        :root {
+            --bg: #FFFFFF;
+            --bg2: #F5F5F5;
+            --text: #1A1A1A;
+            --text2: #666666;
+            --border: #E0E0E0;
+            --red: #CC0000;
+            --blue: #1A73E8;
+            --gold: #D4A017;
+            --green: #0D8043;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            font-size: 16px;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .menu-container {
+            max-width: 500px;
+            margin: 80px auto;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 36px;
+            font-weight: 900;
+            color: var(--red);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: var(--text2);
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            background: var(--bg);
+            margin-bottom: 12px;
+            text-align: center;
+            transition: all 0.15s;
+        }
+
+        .btn:hover {
+            border-color: var(--text);
+        }
+
+        .btn-primary {
+            background: var(--red);
+            color: white;
+            border-color: var(--red);
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            border-color: var(--red);
+        }
+
+        .btn-blue {
+            background: var(--blue);
+            color: white;
+            border-color: var(--blue);
+        }
+
+        .btn-blue:hover {
+            opacity: 0.9;
+            border-color: var(--blue);
+        }
+
+        .btn-green {
+            background: var(--green);
+            color: white;
+            border-color: var(--green);
+        }
+
+        .btn-green:hover {
+            opacity: 0.9;
+            border-color: var(--green);
+        }
+
+        .btn-gold {
+            background: var(--gold);
+            color: white;
+            border-color: var(--gold);
+        }
+
+        .btn-gold:hover {
+            opacity: 0.9;
+            border-color: var(--gold);
+        }
+
+        .btn-danger {
+            color: var(--red);
+            border-color: var(--red);
+            background: none;
+        }
+
+        .btn-danger:hover {
+            background: var(--red);
+            color: white;
+        }
+
+        .btn-small {
+            display: inline-block;
+            width: auto;
+            padding: 8px 14px;
+            font-size: 14px;
+            margin-bottom: 0;
+        }
+
+        .btn-back {
+            background: #999;
+            color: white;
+            border-color: #999;
+        }
+
+        .btn-back:hover {
+            background: #777;
+            border-color: #777;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text2);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .input, select {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 16px;
+            background: var(--bg);
+        }
+
+        .input:focus, select:focus {
+            outline: none;
+            border-color: var(--red);
+        }
+
+        .dashboard {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 240px;
+            background: var(--bg2);
+            padding: 20px 15px;
+            border-right: 2px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .nav-btn {
+            width: 100%;
+            padding: 12px 14px;
+            text-align: left;
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text);
+        }
+
+        .nav-btn:hover {
+            background: var(--red);
+            color: white;
+            border-color: var(--red);
+        }
+
+        .nav-btn.active {
+            background: var(--red);
+            color: white;
+            border-color: var(--red);
+        }
+
+        .card-mini {
+            padding: 15px;
+            background: var(--bg);
+            border-radius: 10px;
+            border: 2px solid var(--border);
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .stat-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .stat-card {
+            padding: 14px;
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+        }
+
+        .stat-card.clickable {
+            cursor: pointer;
+        }
+
+        .stat-card.clickable:hover {
+            border-color: var(--red);
+            background: #FFF5F5;
+        }
+
+        .stat-card h3 {
+            font-size: 12px;
+            color: var(--text2);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 26px;
+            font-weight: 800;
+            margin: 6px 0;
+        }
+
+        .stat-bar {
+            height: 6px;
+            background: var(--bg2);
+            border-radius: 3px;
+            margin-top: 6px;
+        }
+
+        .stat-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+        }
+
+        .bar-energy {
+            background: var(--blue);
+        }
+
+        .bar-prime {
+            background: var(--gold);
+        }
+
+        .bar-hype {
+            background: var(--red);
+        }
+
+        .save-slot {
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            margin: 8px 0;
+            cursor: pointer;
+            text-align: left;
+            background: var(--bg);
+        }
+
+        .save-slot:hover {
+            border-color: var(--red);
+            background: #FFF5F5;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-green {
+            background: #e6f4ec;
+            color: var(--green);
+        }
+
+        .badge-red {
+            background: #fde8e8;
+            color: var(--red);
+        }
+
+        .online-badge {
+            display: inline-block;
+            background: var(--green);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .fight-log {
+            background: var(--bg2);
+            border-radius: 10px;
+            padding: 16px;
+            margin: 12px 0;
+            font-size: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .fight-log p {
+            margin: 6px 0;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 6px;
+                padding: 10px;
+                border-right: none;
+                border-bottom: 2px solid var(--border);
+            }
+
+            .nav-btn {
+                width: auto;
+                flex: 1;
+                min-width: 100px;
+                text-align: center;
+                font-size: 13px;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+<!-- МЕНЮ -->
+<div id="menu" class="screen active">
+    <div class="menu-container">
+        <div class="logo">PROMOTION SIM</div>
+        <p class="subtitle">Онлайн <span id="online-count" class="online-badge">0</span></p>
+        <button class="btn btn-primary" id="btn-create-fighter" onclick="showScreen('fighter-form')">👤 Создать бойца</button>
+        <button class="btn btn-blue" onclick="showPromotionsList()">🏆 Промоушны</button>
+        <button class="btn btn-gold" id="btn-dev-login" onclick="showDevLogin()">🔑 Вход разработчика</button>
+        <button class="btn btn-danger" id="btn-dev-logout" style="display:none;" onclick="devLogout()">🚪 Выйти из панели</button>
+        <div id="save-slots" style="margin-top:20px;"></div>
+    </div>
+</div>
+
+<!-- ВХОД РАЗРАБОТЧИКА -->
+<div id="dev-login" class="screen">
+    <div style="max-width:400px;margin:80px auto;padding:20px;">
+        <h2 style="color:var(--gold);margin-bottom:20px;">🔑 Вход разработчика</h2>
+        <div class="form-group">
+            <label>Пароль разработчика</label>
+            <input type="password" id="dev-password" class="input" placeholder="Введите пароль" onkeydown="if(event.key==='Enter')devLogin()">
+        </div>
+        <button class="btn btn-gold" onclick="devLogin()">Войти</button>
+        <button class="btn btn-back" onclick="showScreen('menu')">← Назад</button>
+    </div>
+</div>
+
+<!-- СОЗДАНИЕ БОЙЦА -->
+<div id="fighter-form" class="screen">
+    <div style="max-width:500px;margin:30px auto;padding:20px;">
+        <h2 style="color:var(--red);margin-bottom:20px;">Создание бойца</h2>
+        <div class="form-group">
+            <label>Имя</label>
+            <input type="text" id="f-name" class="input" placeholder="Введите имя">
+        </div>
+        <div class="form-group">
+            <label>Фамилия</label>
+            <input type="text" id="f-surname" class="input" placeholder="Введите фамилию">
+        </div>
+        <div class="form-group">
+            <label>Прозвище</label>
+            <input type="text" id="f-nickname" class="input" placeholder="Необязательно">
+        </div>
+        <div class="form-group">
+            <label>Возраст</label>
+            <select id="f-age" class="input">
+                <option value="20">20</option>
+                <option value="21">21</option>
+                <option value="22">22</option>
+                <option value="23">23</option>
+                <option value="24">24</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Страна</label>
+            <select id="f-country" class="input">
+                <option>Россия</option>
+                <option>Дагестан</option>
+                <option>Армения</option>
+                <option>Украина</option>
+                <option>Грузия</option>
+                <option>Абхазия</option>
+                <option>Испания</option>
+                <option>Франция</option>
+                <option>Германия</option>
+                <option>Бразилия</option>
+                <option>Англия</option>
+                <option>США</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Базовый стиль</label>
+            <select id="f-style" class="input">
+                <option value="boxing">Бокс</option>
+                <option value="wrestling">Борьба</option>
+                <option value="kickboxing">Кикбоксинг</option>
+            </select>
+        </div>
+        <button class="btn btn-primary" onclick="createFighter()">Создать бойца</button>
+        <button class="btn btn-back" onclick="showScreen('menu')">← Назад</button>
+    </div>
+</div>
+
+<!-- СПИСОК ПРОМОУШНОВ -->
+<div id="promotions-list" class="screen">
+    <div style="max-width:600px;margin:30px auto;padding:20px;">
+        <h2 style="color:var(--red);margin-bottom:20px;">🏆 Промоушны</h2>
+        <div id="promotions-grid" class="stat-grid"></div>
+        <button class="btn btn-back" onclick="showScreen('menu')">← Назад</button>
+    </div>
+</div>
+
+<!-- ДЕТАЛИ ПРОМОУШНА -->
+<div id="promotion-detail" class="screen">
+    <div style="max-width:600px;margin:30px auto;padding:20px;">
+        <h2 id="promo-detail-title" style="color:var(--red);margin-bottom:10px;"></h2>
+        <p id="promo-detail-sport" style="color:var(--text2);margin-bottom:20px;"></p>
+        <div id="promo-detail-actions" style="display:flex;gap:10px;margin-bottom:20px;"></div>
+        <div id="promo-detail-content"></div>
+        <button class="btn btn-back" onclick="showPromotionsList()">← Назад к списку</button>
+    </div>
+</div>
+<!-- ДАШБОРД БОЙЦА -->
+<div id="fighter-dashboard" class="screen">
+    <div class="dashboard">
+        <div class="sidebar">
+            <div class="card-mini">
+                <div style="font-size:32px;">👤</div>
+                <div style="font-weight:bold;" id="dash-name"></div>
+                <div style="color:var(--text2);font-size:12px;" id="dash-info"></div>
+            </div>
+            <button class="nav-btn active" onclick="showFighterTab('profile')">👤 Профиль</button>
+            <button class="nav-btn" onclick="showFighterTab('training')">🏋️ Тренировки</button>
+            <button class="nav-btn" onclick="showFighterTab('promotions')">🏆 Мой промоушн</button>
+            <button class="nav-btn" onclick="showFighterTab('upcoming')">📅 Бои</button>
+            <button class="nav-btn btn-danger" onclick="deleteFighter()">🗑 Удалить бойца</button>
+            <button class="nav-btn" onclick="showScreen('menu')" style="margin-top:auto;background:var(--red);color:white;">← В меню</button>
+        </div>
+        <div class="main-content" id="fighter-content"></div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// 1. НАЧАЛЬНЫЕ ПРОМОУШНЫ
+// ============================================================
+const DEFAULT_PROMOTIONS = [
+    { id: 'ufc', name: 'UFC', sport: 'MMA', country: 'США', popularity: 90, roster: [] },
+    { id: 'wbc', name: 'WBC', sport: 'BOXING', country: 'Мексика', popularity: 85, roster: [] },
+    { id: 'raf', name: 'RAF', sport: 'WRESTLING', country: 'Россия', popularity: 70, roster: [] },
+    { id: 'iba', name: 'IBA', sport: 'BAREKNUCKLE', country: 'США', popularity: 60, roster: [] }
+];
+
+// ============================================================
+// 2. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// ============================================================
+var socket = io();
+var myPlayerId = null;
+var myFighter = null;
+var allFighters = [];
+var allPromotions = [];
+var currentPromotionId = null;
+var isDev = false;
+var selectedFighterId = null;
+const DEV_PASSWORD = '1010';
+
+// ============================================================
+// 3. SOCKET СОБЫТИЯ
+// ============================================================
+function getDefaultPromotions() {
+    return JSON.parse(JSON.stringify(DEFAULT_PROMOTIONS));
+}
+
+socket.on('serverState', function(data) {
+    allFighters = data.fighters || [];
+    
+    if (data.promotions && data.promotions.length > 0) {
+        allPromotions = data.promotions;
+    } else {
+        allPromotions = getDefaultPromotions();
+        socket.emit('initPromotions', allPromotions);
+    }
+    
+    document.getElementById('online-count').textContent = (data.onlineCount || 0) + ' онлайн';
+    updateButtons();
+    updateSaveSlots();
+    loadAll();
+});
+
+socket.on('promotionsInitialized', function(promotions) {
+    allPromotions = promotions;
+    updateSaveSlots();
+});
+
+socket.on('promotionUpdated', function(p) {
+    var idx = allPromotions.findIndex(function(x) { return x.id === p.id; });
+    if (idx !== -1) {
+        allPromotions[idx] = p;
+    }
+    saveAll();
+});
+
+socket.on('connect', function() {
+    socket.emit('register', 'Игрок');
+});
+
+socket.on('playerJoined', function(data) {
+    document.getElementById('online-count').textContent = data.onlineCount + ' онлайн';
+});
+
+socket.on('playerLeft', function(data) {
+    document.getElementById('online-count').textContent = data.onlineCount + ' онлайн';
+});
+
+socket.on('registered', function(data) {
+    myPlayerId = data.id;
+});
+
+socket.on('fighterCreated', function(f) {
+    allFighters.push(f);
+    saveAll();
+    updateButtons();
+    if (isDev) updateDevPanel();
+});
+
+socket.on('fighterUpdated', function(f) {
+    var idx = allFighters.findIndex(function(x) { return x.id === f.id; });
+    if (idx !== -1) {
+        allFighters[idx] = f;
+        if (myFighter && myFighter.id === f.id) myFighter = f;
+    }
+    saveAll();
+    if (isDev) updateDevPanel();
+});
+
+// ============================================================
+// 4. БАЗОВЫЕ ФУНКЦИИ
+// ============================================================
+function deleteFighter() {
+    if (!confirm('Удалить бойца?')) return;
+    if (myFighter && socket) socket.emit('deleteFighter', { playerId: myPlayerId });
+    myFighter = null;
+    localStorage.removeItem('ps_myFighter');
+    saveAll();
+    updateButtons();
+    showScreen('menu');
+    if (isDev) updateDevPanel();
+}
+
+function updateButtons() {
+    var hasFighter = allFighters.some(function(f) {
+        return f.ownerId === myPlayerId && !f.isBot;
+    });
+    var btnF = document.getElementById('btn-create-fighter');
+    if (btnF) btnF.style.display = (isDev || !hasFighter) ? 'block' : 'none';
+}
+
+function saveAll() {
+    if (myFighter) localStorage.setItem('ps_myFighter', JSON.stringify(myFighter));
+    updateSaveSlots();
+}
+
+function loadAll() {
+    var devMode = localStorage.getItem('ps_devMode');
+    if (devMode === 'true') {
+        isDev = true;
+        document.getElementById('btn-dev-logout').style.display = 'block';
+        document.getElementById('btn-dev-login').style.display = 'none';
+    }
+    
+    var mf = localStorage.getItem('ps_myFighter');
+    if (mf) {
+        var localFighter = JSON.parse(mf);
+        var exists = allFighters.find(function(f) { return f.id === localFighter.id; });
+        if (exists) {
+            myFighter = exists;
+        } else {
+            myFighter = localFighter;
+        }
+    }
+    updateSaveSlots();
+    updateButtons();
+}
+
+function updateSaveSlots() {
+    var container = document.getElementById('save-slots');
+    if (!container) return;
+    var html = '<h3 style="color:var(--red);margin-bottom:10px;">💾 Сохранения</h3>';
+    
+    var myFighters = allFighters.filter(function(f) {
+        return f.ownerId === myPlayerId && !f.isBot;
+    });
+    
+    if (myFighters.length > 0) {
+        myFighters.forEach(function(f) {
+            var promoName = 'Без промоушна';
+            if (f.currentPromotionId) {
+                var promo = allPromotions.find(function(p) { return p.id === f.currentPromotionId; });
+                if (promo) promoName = promo.name;
+            }
+            var isActive = myFighter && myFighter.id === f.id;
+            html += '<div class="save-slot" onclick="loadFighter(\'' + f.id + '\')" style="' + (isActive ? 'border-color:var(--gold);border-width:3px;' : '') + '">' +
+                '<strong>👤 ' + f.fullName + (isActive ? ' ⭐' : '') + '</strong><br>' +
+                '<span style="color:var(--text2);font-size:12px;">' + f.country + ' | ' + f.baseStyle + ' | ' + promoName + '</span>' +
+                '</div>';
+        });
+    } else {
+        html += '<div class="save-slot" style="color:#999;">👤 Нет бойцов</div>';
+    }
+    container.innerHTML = html;
+}
+
+function loadFighter(fighterId) {
+    if (!fighterId) {
+        var myFighters = allFighters.filter(function(f) { return f.ownerId === myPlayerId && !f.isBot; });
+        if (myFighters.length > 0) {
+            fighterId = myFighters[0].id;
+        } else {
+            alert('Нет бойцов!');
+            return;
+        }
+    }
+    
+    var fighter = allFighters.find(function(f) { return f.id === fighterId; });
+    if (!fighter) return;
+    
+    myFighter = fighter;
+    localStorage.setItem('ps_myFighter', JSON.stringify(myFighter));
+    document.getElementById('dash-name').textContent = myFighter.fullName;
+    document.getElementById('dash-info').textContent = myFighter.country + ' | ' + myFighter.baseStyle;
+    showScreen('fighter-dashboard');
+    showFighterTab('profile');
+    updateSaveSlots();
+}
+
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(function(s) {
+        s.classList.remove('active');
+    });
+    document.getElementById(id).classList.add('active');
+}
+// ============================================================
+// 5. СОЗДАНИЕ БОЙЦА (ИСПРАВЛЕНО!)
+// ============================================================
+function createFighter() {
+    if (!isDev) {
+        if (allFighters.some(function(f) { return f.ownerId === myPlayerId && !f.isBot; })) {
+            alert('У вас уже есть боец!');
+            return;
+        }
+    }
+
+    var name = document.getElementById('f-name').value || 'Боец';
+    var surname = document.getElementById('f-surname').value || 'Новый';
+
+    var newFighter = {
+        id: 'f_' + Date.now(),
+        firstName: name,
+        lastName: surname,
+        fullName: name + ' ' + surname,
+        nickname: document.getElementById('f-nickname').value,
+        age: parseInt(document.getElementById('f-age').value),
+        country: document.getElementById('f-country').value,
+        baseStyle: document.getElementById('f-style').value,
+        boxing: 5,
+        wrestling: 5,
+        submission: 5,
+        kick: 5,
+        speed: 5,
+        stamina: 5,
+        strength: 5,
+        energy: 100,
+        maxEnergy: 100,
+        prime: 0,
+        maxPrime: 100,
+        hype: 0,
+        maxHype: 100,
+        records: {
+            wins: 0,
+            losses: 0,
+            ko: 0
+        },
+        currentPromotionId: null,
+        ownerId: myPlayerId,
+        isBot: false,
+        createdAt: new Date().toISOString()
+    };
+
+    socket.emit('createFighter', newFighter);
+    
+    allFighters.push(newFighter);
+    myFighter = newFighter;
+    localStorage.setItem('ps_myFighter', JSON.stringify(myFighter));
+    
+    document.getElementById('dash-name').textContent = myFighter.fullName;
+    document.getElementById('dash-info').textContent = myFighter.country + ' | ' + myFighter.baseStyle;
+    showScreen('fighter-dashboard');
+    showFighterTab('profile');
+    updateSaveSlots();
+    updateButtons();
+    
+    document.getElementById('f-name').value = '';
+    document.getElementById('f-surname').value = '';
+    document.getElementById('f-nickname').value = '';
+    
+    if (isDev) updateDevPanel();
+    
+    alert('✅ Боец ' + newFighter.fullName + ' создан!');
+}
+
+// ============================================================
+// 6. СПИСОК ПРОМОУШНОВ
+// ============================================================
+function showPromotionsList() {
+    showScreen('promotions-list');
+    renderPromotionsList();
+}
+
+function renderPromotionsList() {
+    var container = document.getElementById('promotions-grid');
+    if (!container) return;
+    
+    var html = '';
+    for (var i = 0; i < allPromotions.length; i++) {
+        var p = allPromotions[i];
+        var fightersInPromo = allFighters.filter(function(f) {
+            return f.currentPromotionId === p.id;
+        });
+        var isMyPromo = myFighter && myFighter.currentPromotionId === p.id;
+        
+        html += '<div class="stat-card clickable" onclick="showPromotionDetail(\'' + p.id + '\')" style="' + (isMyPromo ? 'border-color:var(--green);border-width:3px;' : '') + '">';
+        html += '<h3>' + (isMyPromo ? '✅ ' : '') + p.name + '</h3>';
+        html += '<p style="font-size:14px;">' + p.sport + ' | ' + p.country + ' | Популярность: ' + p.popularity + '%</p>';
+        html += '<p style="font-size:12px;color:var(--text2);">Бойцов: ' + fightersInPromo.length + '</p>';
+        if (isDev) {
+            html += '<div style="display:flex;gap:5px;margin-top:5px;">' +
+                '<button class="btn btn-blue btn-small" onclick="event.stopPropagation();devEditPromotion(\'' + p.id + '\')">✏️ Ред.</button>' +
+                '<button class="btn btn-danger btn-small" onclick="event.stopPropagation();devDeletePromotion(\'' + p.id + '\')">🗑</button>' +
+                '</div>';
+        }
+        html += '</div>';
+    }
+    
+    if (isDev) {
+        html += '<button class="btn btn-blue" onclick="devShowCreatePromotion()" style="margin-top:10px;">➕ Создать промоушн</button>';
+    }
+    
+    container.innerHTML = html;
+}
+
+// ============================================================
+// 7. ДЕТАЛИ ПРОМОУШНА
+// ============================================================
+function showPromotionDetail(promoId) {
+    currentPromotionId = promoId;
+    showScreen('promotion-detail');
+    renderPromotionDetail(promoId);
+}
+
+function renderPromotionDetail(promoId) {
+    var promo = allPromotions.find(function(p) { return p.id === promoId; });
+    if (!promo) return;
+
+    document.getElementById('promo-detail-title').textContent = '🏆 ' + promo.name;
+    document.getElementById('promo-detail-sport').textContent = promo.sport + ' | ' + promo.country + ' | Популярность: ' + promo.popularity + '%';
+
+    var actionsDiv = document.getElementById('promo-detail-actions');
+    var isSigned = myFighter && myFighter.currentPromotionId === promoId;
+    var hasFighter = myFighter !== null;
+
+    var actionsHtml = '';
+    actionsHtml += '<button class="btn btn-blue btn-small" onclick="showPromotionRanking(\'' + promoId + '\')">🏆 Рейтинг</button>';
+    
+    if (hasFighter && !isSigned) {
+        actionsHtml += '<button class="btn btn-green btn-small" onclick="signWithPromotion(\'' + promoId + '\')">📝 Подписать контракт</button>';
+    } else if (isSigned) {
+        actionsHtml += '<button class="btn btn-danger btn-small" onclick="leavePromotion(\'' + promoId + '\')">🚪 Покинуть промоушн</button>';
+    } else if (!hasFighter) {
+        actionsHtml += '<button class="btn btn-small" disabled style="opacity:0.5;">Сначала создайте бойца</button>';
+    }
+
+    if (isDev) {
+        actionsHtml += '<button class="btn btn-gold btn-small" onclick="devEditPromotion(\'' + promoId + '\')">✏️ Редактировать</button>';
+        actionsHtml += '<button class="btn btn-danger btn-small" onclick="devDeletePromotion(\'' + promoId + '\')">🗑 Удалить</button>';
+    }
+
+    actionsDiv.innerHTML = actionsHtml;
+    showPromotionRanking(promoId);
+}
+
+// ============================================================
+// 8. РЕЙТИНГ ПРОМОУШНА
+// ============================================================
+function showPromotionRanking(promoId) {
+    var promo = allPromotions.find(function(p) { return p.id === promoId; });
+    if (!promo) return;
+
+    var container = document.getElementById('promo-detail-content');
+    
+    var rosterFighters = allFighters.filter(function(f) {
+        return f.currentPromotionId === promoId;
+    });
+
+    rosterFighters.sort(function(a, b) {
+        return (b.hype || 0) - (a.hype || 0);
+    });
+
+    var html = '<h3 style="margin-bottom:15px;">Топ-15 бойцов</h3>';
+    html += '<div class="stat-grid">';
+
+    if (rosterFighters.length === 0) {
+        html += '<p style="color:var(--text2);">В этом промоушне пока нет бойцов</p>';
+    } else {
+        var topCount = Math.min(15, rosterFighters.length);
+        for (var i = 0; i < topCount; i++) {
+            var f = rosterFighters[i];
+            var isMyFighter = myFighter && myFighter.id === f.id;
+            var rank = i + 1;
+            var medal = '';
+            if (rank === 1) medal = '🥇 ';
+            else if (rank === 2) medal = '🥈 ';
+            else if (rank === 3) medal = '🥉 ';
+
+            html += '<div class="stat-card" style="' + (isMyFighter ? 'border-color:var(--gold);border-width:3px;' : '') + '">';
+            html += '<h3>' + medal + '#' + rank + ' ' + f.fullName + (isMyFighter ? ' ⭐ (Вы)' : '') + '</h3>';
+            html += '<p>' + f.baseStyle + ' | ' + f.country + ' | Рекорд: ' + (f.records ? f.records.wins + '-' + f.records.losses + '-' + f.records.ko + 'KO' : '0-0-0') + '</p>';
+            html += '<p style="font-size:12px;color:var(--text2);">Хайп: ' + (f.hype || 0) + ' | Прайм: ' + (f.prime || 0) + '</p>';
+            html += '</div>';
+        }
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// ============================================================
+// 9. ПОДПИСАНИЕ КОНТРАКТА
+// ============================================================
+function signWithPromotion(promoId) {
+    if (!myFighter) {
+        alert('Сначала создайте бойца!');
+        return;
+    }
+
+    if (myFighter.currentPromotionId) {
+        var oldPromo = allPromotions.find(function(p) { return p.id === myFighter.currentPromotionId; });
+        if (oldPromo) {
+            if (!confirm('Вы уже состоите в ' + oldPromo.name + '. Покинуть его и подписаться на новый промоушн?')) {
+                return;
+            }
+            leavePromotion(oldPromo.id, true);
+        }
+    }
+
+    var promo = allPromotions.find(function(p) { return p.id === promoId; });
+    if (!promo) {
+        alert('Промоушн не найден!');
+        return;
+    }
+
+    myFighter.currentPromotionId = promoId;
+    socket.emit('updateFighter', myFighter);
+    
+    var promoIndex = allPromotions.findIndex(function(p) { return p.id === promoId; });
+    if (promoIndex !== -1) {
+        if (!allPromotions[promoIndex].roster) allPromotions[promoIndex].roster = [];
+        if (allPromotions[promoIndex].roster.indexOf(myFighter.id) === -1) {
+            allPromotions[promoIndex].roster.push(myFighter.id);
+        }
+        socket.emit('updatePromotion', allPromotions[promoIndex]);
+    }
+
+    saveAll();
+    renderPromotionDetail(promoId);
+    updateSaveSlots();
+    alert('✅ ' + myFighter.fullName + ' подписал контракт с ' + promo.name + '!');
+}
+
+function leavePromotion(promoId, silent) {
+    if (!myFighter) return;
+    
+    var promo = allPromotions.find(function(p) { return p.id === promoId; });
+    if (!promo) return;
+
+    var promoIndex = allPromotions.findIndex(function(p) { return p.id === promoId; });
+    if (promoIndex !== -1 && allPromotions[promoIndex].roster) {
+        var idx = allPromotions[promoIndex].roster.indexOf(myFighter.id);
+        if (idx !== -1) {
+            allPromotions[promoIndex].roster.splice(idx, 1);
+            socket.emit('updatePromotion', allPromotions[promoIndex]);
+        }
+    }
+
+    myFighter.currentPromotionId = null;
+    socket.emit('updateFighter', myFighter);
+    saveAll();
+
+    if (!silent) {
+        alert('Вы покинули ' + promo.name);
+        renderPromotionDetail(promoId);
+        updateSaveSlots();
+    }
+  }
+// ============================================================
+// 10. ДАШБОРД БОЙЦА
+// ============================================================
+function showFighterTab(tab) {
+    var navBtns = document.querySelectorAll('#fighter-dashboard .nav-btn');
+    for (var i = 0; i < navBtns.length; i++) {
+        navBtns[i].classList.remove('active');
+    }
+    if (event && event.target) {
+        event.target.classList.add('active');
+    }
+
+    var c = document.getElementById('fighter-content');
+    var f = myFighter;
+
+    if (!f) {
+        c.innerHTML = '<p style="color:var(--text2);">Боец не найден. Выберите бойца из сохранений.</p>';
+        return;
+    }
+
+    if (tab === 'profile') {
+        var promoName = 'Без промоушна';
+        if (f.currentPromotionId) {
+            var promo = allPromotions.find(function(p) { return p.id === f.currentPromotionId; });
+            if (promo) promoName = promo.name;
+        }
+
+        c.innerHTML = '<h2>👤 ' + f.fullName + (f.nickname ? ' "' + f.nickname + '"' : '') + '</h2>' +
+            '<p style="color:var(--text2);margin-bottom:15px;">' + f.country + ' | ' + f.baseStyle + ' | ' + promoName + '</p>' +
+            '<div class="stat-grid">' +
+            '<div class="stat-card"><h3>⚡ Энергия</h3><div class="stat-value">' + f.energy + '/' + f.maxEnergy + '</div><div class="stat-bar"><div class="stat-bar-fill bar-energy" style="width:' + (f.energy / f.maxEnergy * 100) + '%"></div></div></div>' +
+            '<div class="stat-card"><h3>🔥 Прайм</h3><div class="stat-value">' + f.prime + '/' + f.maxPrime + '</div><div class="stat-bar"><div class="stat-bar-fill bar-prime" style="width:' + (f.prime / f.maxPrime * 100) + '%"></div></div></div>' +
+            '<div class="stat-card"><h3>📢 Хайп</h3><div class="stat-value">' + f.hype + '/' + f.maxHype + '</div><div class="stat-bar"><div class="stat-bar-fill bar-hype" style="width:' + (f.hype / f.maxHype * 100) + '%"></div></div></div>' +
+            '<div class="stat-card"><h3>🏆 Рекорд</h3><div class="stat-value" style="font-size:20px;">' + f.records.wins + 'W-' + f.records.losses + 'L-' + f.records.ko + 'KO</div></div>' +
+            '</div>' +
+            '<h3 style="margin-top:15px;">Навыки</h3><div class="stat-grid">' +
+            '<div class="stat-card"><h3>Бокс</h3><div class="stat-value">' + f.boxing + '</div></div>' +
+            '<div class="stat-card"><h3>Борьба</h3><div class="stat-value">' + f.wrestling + '</div></div>' +
+            '<div class="stat-card"><h3>Самбишн</h3><div class="stat-value">' + f.submission + '</div></div>' +
+            '<div class="stat-card"><h3>Удар ногой</h3><div class="stat-value">' + f.kick + '</div></div>' +
+            '<div class="stat-card"><h3>Скорость</h3><div class="stat-value">' + f.speed + '</div></div>' +
+            '<div class="stat-card"><h3>Выносливость</h3><div class="stat-value">' + f.stamina + '</div></div>' +
+            '<div class="stat-card"><h3>Сила</h3><div class="stat-value">' + f.strength + '</div></div>' +
+            '</div>';
+    } else if (tab === 'training') {
+        c.innerHTML = '<h2>🏋️ Тренировки</h2><p style="color:var(--text2);">В разработке</p>';
+    } else if (tab === 'promotions') {
+        if (f.currentPromotionId) {
+            var promo = allPromotions.find(function(p) { return p.id === f.currentPromotionId; });
+            if (promo) {
+                c.innerHTML = '<h2>🏆 Мой промоушн: ' + promo.name + '</h2>' +
+                    '<p>' + promo.sport + ' | ' + promo.country + ' | Популярность: ' + promo.popularity + '%</p>' +
+                    '<button class="btn btn-primary" onclick="showPromotionDetail(\'' + promo.id + '\')" style="margin-top:15px;">📋 Перейти в промоушн</button>';
+            } else {
+                c.innerHTML = '<h2>🏆 Мой промоушн</h2><p style="color:var(--text2);">Промоушн не найден</p>';
+            }
+        } else {
+            c.innerHTML = '<h2>🏆 Мой промоушн</h2><p style="color:var(--text2);">Вы не состоите ни в одном промоушне</p>' +
+                '<button class="btn btn-blue" onclick="showPromotionsList()" style="margin-top:15px;">📋 Смотреть промоушны</button>';
+        }
+    } else if (tab === 'upcoming') {
+        c.innerHTML = '<h2>📅 Предстоящие бои</h2><p style="color:var(--text2);">Нет боёв</p>';
+    }
+}
+
+// ============================================================
+// 11. РАЗРАБОТЧИК
+// ============================================================
+function showDevLogin() {
+    showScreen('dev-login');
+}
+
+function devLogin() {
+    var password = document.getElementById('dev-password').value;
+    if (password === DEV_PASSWORD) {
+        isDev = true;
+        localStorage.setItem('ps_devMode', 'true');
+        document.getElementById('btn-dev-logout').style.display = 'block';
+        document.getElementById('btn-dev-login').style.display = 'none';
+        updateButtons();
+        updateSaveSlots();
+        showScreen('menu');
+        alert('✅ Режим разработчика активирован! Теперь вы можете создавать сколько угодно бойцов и управлять промоушнами.');
+        document.getElementById('dev-password').value = '';
+    } else {
+        alert('❌ Неверный пароль!');
+    }
+}
+
+function devLogout() {
+    isDev = false;
+    localStorage.removeItem('ps_devMode');
+    document.getElementById('btn-dev-logout').style.display = 'none';
+    document.getElementById('btn-dev-login').style.display = 'block';
+    updateButtons();
+    updateSaveSlots();
+    showScreen('menu');
+    alert('✅ Режим разработчика деактивирован.');
+}
+
+function updateDevPanel() {
+    updateSaveSlots();
+}
+
+function devEditPromotion(promoId) {
+    var promo = allPromotions.find(function(p) { return p.id === promoId; });
+    if (!promo) return;
+    var name = prompt('Название промоушна:', promo.name);
+    if (name === null) return;
+    var sport = prompt('Вид спорта (MMA, BOXING, WRESTLING, BAREKNUCKLE):', promo.sport);
+    if (sport === null) return;
+    var country = prompt('Страна:', promo.country);
+    if (country === null) return;
+    var popularity = parseInt(prompt('Популярность (1-100):', promo.popularity));
+    if (isNaN(popularity)) popularity = promo.popularity;
+    if (popularity < 1) popularity = 1;
+    if (popularity > 100) popularity = 100;
+    
+    promo.name = name || promo.name;
+    promo.sport = sport ? sport.toUpperCase() : promo.sport;
+    promo.country = country || promo.country;
+    promo.popularity = popularity;
+    
+    socket.emit('updatePromotion', promo);
+    saveAll();
+    renderPromotionsList();
+    if (currentPromotionId === promoId) renderPromotionDetail(promoId);
+    alert('✅ Промоушн обновлен!');
+}
+
+function devDeletePromotion(promoId) {
+    if (!confirm('Удалить промоушн? Все бойцы будут освобождены!')) return;
+    var promo = allPromotions.find(function(p) { return p.id === promoId; });
+    if (promo && promo.roster) {
+        promo.roster.forEach(function(fighterId) {
+            var fighter = allFighters.find(function(f) { return f.id === fighterId; });
+            if (fighter) {
+                fighter.currentPromotionId = null;
+                socket.emit('updateFighter', fighter);
+            }
+        });
+    }
+    allPromotions = allPromotions.filter(function(p) { return p.id !== promoId; });
+    socket.emit('updatePromotion', { id: promoId, deleted: true });
+    saveAll();
+    renderPromotionsList();
+    showScreen('promotions-list');
+    alert('✅ Промоушн удален!');
+}
+
+function devShowCreatePromotion() {
+    var name = prompt('Введите название промоушна:');
+    if (!name) return;
+    var sport = prompt('Введите вид спорта (MMA, BOXING, WRESTLING, BAREKNUCKLE):');
+    if (!sport) return;
+    var country = prompt('Введите страну:');
+    if (!country) return;
+    var popularity = parseInt(prompt('Введите популярность (1-100):', '70'));
+    if (isNaN(popularity)) popularity = 70;
+    if (popularity < 1) popularity = 1;
+    if (popularity > 100) popularity = 100;
+    
+    var newPromo = {
+        id: 'promo_' + Date.now(),
+        name: name,
+        sport: sport.toUpperCase(),
+        country: country,
+        popularity: popularity,
+        roster: []
+    };
+    
+    allPromotions.push(newPromo);
+    socket.emit('updatePromotion', newPromo);
+    saveAll();
+    renderPromotionsList();
+    alert('✅ Промоушн создан: ' + name);
+}
+
+// ============================================================
+// 12. ИНИЦИАЛИЗАЦИЯ
+// ============================================================
+window.addEventListener('beforeunload', function() {
+    saveAll();
+});
+
+setInterval(function() {
+    saveAll();
+}, 1000);
+
+loadAll();
+updateSaveSlots();
+</script>
+</body>
+</html>
+
+
+
