@@ -10,8 +10,15 @@ const io = socketIO(server);
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, 'data.json');
 
-// Загрузка данных
-let DB = { fighters: [], promotions: [], events: [], onlineCount: 0 };
+// ============================================================
+// 1. БАЗА ДАННЫХ
+// ============================================================
+let DB = { 
+    fighters: [], 
+    promotions: [], 
+    events: [], 
+    onlineCount: 0 
+};
 
 function loadDB() {
     try {
@@ -45,19 +52,19 @@ function saveDB() {
 // Загружаем данные при старте
 if (!loadDB()) {
     console.log('📦 Создана новая база данных');
-    DB.promotions = [
-        { id: 'ufc', name: 'UFC', sport: 'MMA', country: 'США', popularity: 90, roster: [] },
-        { id: 'wbc', name: 'WBC', sport: 'BOXING', country: 'Мексика', popularity: 85, roster: [] },
-        { id: 'raf', name: 'RAF', sport: 'WRESTLING', country: 'Россия', popularity: 70, roster: [] },
-        { id: 'iba', name: 'IBA', sport: 'BAREKNUCKLE', country: 'США', popularity: 60, roster: [] }
-    ];
     saveDB();
 }
 
 app.use(express.static(path.join(__dirname)));
 
+// ============================================================
+// 2. ОНЛАЙН ИГРОКИ
+// ============================================================
 const online = new Map();
 
+// ============================================================
+// 3. SOCKET.IO
+// ============================================================
 io.on('connection', (socket) => {
     console.log('🔌 Новое подключение:', socket.id);
 
@@ -81,16 +88,10 @@ io.on('connection', (socket) => {
         console.log('👤 Зарегистрирован:', name || 'Игрок');
     });
 
-    // Инициализация промоушнов (от первого клиента)
-    socket.on('initPromotions', (promotions) => {
-        if (DB.promotions.length === 0) {
-            DB.promotions = promotions;
-            saveDB();
-            io.emit('promotionsInitialized', DB.promotions);
-            console.log('🏆 Инициализированы промоушны');
-        }
-    });
-
+    // ============================================================
+    // БОЙЦЫ
+    // ============================================================
+    
     // Создание бойца
     socket.on('createFighter', (data) => {
         const fighter = { 
@@ -118,49 +119,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Обновление промоушна
-    socket.on('updatePromotion', (data) => {
-        if (data.deleted) {
-            DB.promotions = DB.promotions.filter(p => p.id !== data.id);
-            saveDB();
-            console.log('🗑 Удалён промоушн:', data.id);
-            return;
-        }
-        
-        const idx = DB.promotions.findIndex(p => p.id === data.id);
-        if (idx !== -1) {
-            DB.promotions[idx] = { ...DB.promotions[idx], ...data };
-            saveDB();
-            io.emit('promotionUpdated', DB.promotions[idx]);
-            console.log('🔄 Обновлён промоушн:', DB.promotions[idx].name);
-        } else {
-            // Новый промоушн
-            DB.promotions.push(data);
-            saveDB();
-            io.emit('promotionUpdated', data);
-            console.log('🏆 Создан промоушн:', data.name);
-        }
-    });
-
-    // Подписание бойца (устаревший метод, используем updateFighter)
-    socket.on('signFighter', (data) => {
-        const promo = DB.promotions.find(p => p.id === data.promotionId);
-        const fighter = DB.fighters.find(f => f.id === data.fighterId);
-        
-        if (promo && fighter) {
-            if (!promo.roster) promo.roster = [];
-            if (!promo.roster.includes(fighter.id)) {
-                promo.roster.push(fighter.id);
-            }
-            fighter.currentPromotionId = promo.id;
-            saveDB();
-            
-            io.emit('fighterUpdated', fighter);
-            io.emit('promotionUpdated', promo);
-            console.log('📝 Подписан боец:', fighter.fullName, '→', promo.name);
-        }
-    });
-
     // Удаление бойца
     socket.on('deleteFighter', (data) => {
         const playerId = data.playerId;
@@ -177,7 +135,67 @@ io.on('connection', (socket) => {
         });
     });
 
-    // Отключение
+    // ============================================================
+    // ПРОМОУШНЫ
+    // ============================================================
+    
+    // Обновление промоушна (создание/редактирование)
+    socket.on('updatePromotion', (data) => {
+        if (data.deleted) {
+            DB.promotions = DB.promotions.filter(p => p.id !== data.id);
+            saveDB();
+            console.log('🗑 Удалён промоушн:', data.id);
+            io.emit('promotionUpdated', { id: data.id, deleted: true });
+            return;
+        }
+        
+        const idx = DB.promotions.findIndex(p => p.id === data.id);
+        if (idx !== -1) {
+            // Обновление существующего
+            DB.promotions[idx] = { ...DB.promotions[idx], ...data };
+            saveDB();
+            io.emit('promotionUpdated', DB.promotions[idx]);
+            console.log('🔄 Обновлён промоушн:', DB.promotions[idx].name);
+        } else {
+            // Новый промоушн
+            DB.promotions.push(data);
+            saveDB();
+            io.emit('promotionUpdated', data);
+            console.log('🏆 Создан промоушн:', data.name);
+        }
+    });
+
+    // ============================================================
+    // БОИ
+    // ============================================================
+    
+    // Назначение боя
+    socket.on('fightScheduled', (data) => {
+        io.emit('fightScheduled', data);
+        console.log('⚔️ Бой назначен в промоушне:', data.promotionId);
+    });
+
+    // Начало боя
+    socket.on('fightStarted', (data) => {
+        io.emit('fightStarted', data);
+        console.log('⚔️ Бой начался:', data.id);
+    });
+
+    // Обновление боя (комментарии)
+    socket.on('fightUpdate', (data) => {
+        io.emit('fightUpdate', data);
+    });
+
+    // Завершение боя
+    socket.on('fightFinished', (data) => {
+        io.emit('fightFinished', data);
+        console.log('🏆 Бой завершён:', data.id);
+    });
+
+    // ============================================================
+    // ОТКЛЮЧЕНИЕ
+    // ============================================================
+    
     socket.on('disconnect', () => {
         const name = online.get(socket.id);
         online.delete(socket.id);
@@ -190,12 +208,18 @@ io.on('connection', (socket) => {
     });
 });
 
-// Автосохранение каждые 30 секунд
+// ============================================================
+// 4. АВТОСОХРАНЕНИЕ
+// ============================================================
 setInterval(() => {
     saveDB();
 }, 30000);
 
+// ============================================================
+// 5. ЗАПУСК СЕРВЕРА
+// ============================================================
 server.listen(PORT, () => {
     console.log(`🚀 Сервер запущен на порту ${PORT}`);
     console.log(`🌐 Открой: http://localhost:${PORT}`);
+    console.log(`📁 Файл данных: ${DATA_FILE}`);
 });
