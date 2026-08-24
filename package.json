@@ -1,7 +1,7 @@
 {
-  "name": "promotion-simulator",
+  "name": "mma-career",
   "version": "1.0.0",
-  "description": "Онлайн-симулятор промоушна с боями",
+  "description": "Онлайн-симулятор MMA карьеры с боями в реальном времени",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -14,7 +14,7 @@
   "devDependencies": {
     "nodemon": "^3.0.1"
   },
-  "keywords": ["game", "simulator", "mma", "promotion"],
-  "author": "Your Name",
+  "keywords": ["mma", "game", "simulator", "fighting", "career"],
+  "author": "MMA Career",
   "license": "MIT"
 }
