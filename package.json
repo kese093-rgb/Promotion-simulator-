@@ -14,7 +14,13 @@
   "devDependencies": {
     "nodemon": "^3.0.1"
   },
-  "keywords": ["mma", "game", "simulator", "fighting", "career"],
+  "keywords": [
+    "mma",
+    "game",
+    "simulator",
+    "fighting",
+    "career"
+  ],
   "author": "MMA Career",
   "license": "MIT"
 }
