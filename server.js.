@@ -1,0 +1,502 @@
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const fs = require('fs');
+const path = require('path');
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
+
+const PORT = process.env.PORT || 3000;
+const DATA_FILE = path.join(__dirname, 'data.json');
+
+let DB = {
+    fighters: [],
+    promotions: [],
+    events: []
+};
+
+// ============================================================
+// СОХРАНЕНИЕ
+// ============================================================
+
+function saveDB() {
+    try {
+        fs.writeFileSync(
+            DATA_FILE,
+            JSON.stringify(DB, null, 2),
+            'utf8'
+        );
+
+        console.log(
+            '💾 Сохранено. Бойцов:',
+            DB.fighters.length,
+            '| Промоушнов:',
+            DB.promotions.length
+        );
+
+        return true;
+    } catch (error) {
+        console.log('❌ Ошибка сохранения:', error.message);
+        return false;
+    }
+}
+
+// ============================================================
+// ЗАГРУЗКА
+// ============================================================
+
+function loadDB() {
+    try {
+        if (!fs.existsSync(DATA_FILE)) {
+            saveDB();
+            return;
+        }
+
+        const data = fs.readFileSync(
+            DATA_FILE,
+            'utf8'
+        );
+
+        DB = JSON.parse(data);
+
+        if (!Array.isArray(DB.fighters)) {
+            DB.fighters = [];
+        }
+
+        if (!Array.isArray(DB.promotions)) {
+            DB.promotions = [];
+        }
+
+        if (!Array.isArray(DB.events)) {
+            DB.events = [];
+        }
+
+        console.log(
+            '✅ База загружена.',
+            'Бойцов:',
+            DB.fighters.length,
+            'Промоушнов:',
+            DB.promotions.length
+        );
+
+    } catch (error) {
+        console.log(
+            '❌ Ошибка загрузки:',
+            error.message
+        );
+
+        DB = {
+            fighters: [],
+            promotions: [],
+            events: []
+        };
+
+        saveDB();
+    }
+}
+
+loadDB();
+
+// ============================================================
+// СТАТИКА
+// ============================================================
+
+app.use(express.static(__dirname));
+
+// ============================================================
+// ПОДКЛЮЧЕНИЕ
+// ============================================================
+
+const onlinePlayers = new Map();
+
+io.on('connection', (socket) => {
+
+    console.log(
+        '🔌 Подключился:',
+        socket.id
+    );
+
+    // Отправляем текущую базу новому игроку
+    socket.emit('serverState', {
+        fighters: DB.fighters,
+        promotions: DB.promotions,
+        events: DB.events,
+        onlineCount: onlinePlayers.size
+    });
+
+    // ========================================================
+    // РЕГИСТРАЦИЯ
+    // ========================================================
+
+    socket.on('register', (name) => {
+
+        const playerName =
+            name || 'Игрок';
+
+        onlinePlayers.set(
+            socket.id,
+            playerName
+        );
+
+        io.emit('playerJoined', {
+            name: playerName,
+            onlineCount: onlinePlayers.size
+        });
+
+        socket.emit('registered', {
+            id: socket.id
+        });
+
+        console.log(
+            '👤 Игрок:',
+            playerName
+        );
+    });
+
+    // ========================================================
+    // СОЗДАНИЕ БОЙЦА
+    // ========================================================
+
+    socket.on('createFighter', (data) => {
+
+        if (!data || !data.id) {
+            return;
+        }
+
+        const fighter = {
+            ...data,
+
+            ownerId: socket.id,
+            isBot: false,
+
+            createdAt:
+                data.createdAt ||
+                new Date().toISOString()
+        };
+
+        // Не создаём дубликат
+        const existing =
+            DB.fighters.findIndex(
+                f => f.id === fighter.id
+            );
+
+        if (existing !== -1) {
+            DB.fighters[existing] = {
+                ...DB.fighters[existing],
+                ...fighter
+            };
+        } else {
+            DB.fighters.push(fighter);
+        }
+
+        saveDB();
+
+        io.emit(
+            'fighterCreated',
+            fighter
+        );
+
+        // Сразу отправляем полное состояние
+        io.emit('serverState', {
+            fighters: DB.fighters,
+            promotions: DB.promotions,
+            events: DB.events,
+            onlineCount: onlinePlayers.size
+        });
+
+        console.log(
+            '👊 Боец сохранён:',
+            fighter.fullName
+        );
+    });
+
+    // ========================================================
+    // ОБНОВЛЕНИЕ БОЙЦА
+    // ========================================================
+
+    socket.on('updateFighter', (data) => {
+
+        if (!data || !data.id) {
+            return;
+        }
+
+        const index =
+            DB.fighters.findIndex(
+                f => f.id === data.id
+            );
+
+        if (index === -1) {
+            return;
+        }
+
+        DB.fighters[index] = {
+            ...DB.fighters[index],
+            ...data
+        };
+
+        saveDB();
+
+        io.emit(
+            'fighterUpdated',
+            DB.fighters[index]
+        );
+
+        console.log(
+            '🔄 Боец обновлён:',
+            DB.fighters[index].fullName
+        );
+    });
+
+    // ========================================================
+    // УДАЛЕНИЕ БОЙЦА
+    // ========================================================
+
+    socket.on('deleteFighter', (data) => {
+
+        if (!data) {
+            return;
+        }
+
+        const fighterId =
+            data.fighterId;
+
+        const playerId =
+            data.playerId;
+
+        if (fighterId) {
+
+            DB.fighters =
+                DB.fighters.filter(
+                    f => f.id !== fighterId
+                );
+
+        } else if (playerId) {
+
+            DB.fighters =
+                DB.fighters.filter(
+                    f => f.ownerId !== playerId
+                );
+        }
+
+        saveDB();
+
+        io.emit('serverState', {
+            fighters: DB.fighters,
+            promotions: DB.promotions,
+            events: DB.events,
+            onlineCount: onlinePlayers.size
+        });
+
+        console.log(
+            '🗑 Боец удалён'
+        );
+    });
+
+    // ========================================================
+    // ПРОМОУШНЫ
+    // ========================================================
+
+    socket.on('updatePromotion', (data) => {
+
+        if (!data || !data.id) {
+            return;
+        }
+
+        // Удаление
+        if (data.deleted) {
+
+            DB.promotions =
+                DB.promotions.filter(
+                    p => p.id !== data.id
+                );
+
+            saveDB();
+
+            io.emit(
+                'promotionUpdated',
+                {
+                    id: data.id,
+                    deleted: true
+                }
+            );
+
+            io.emit('serverState', {
+                fighters: DB.fighters,
+                promotions: DB.promotions,
+                events: DB.events,
+                onlineCount: onlinePlayers.size
+            });
+
+            return;
+        }
+
+        const index =
+            DB.promotions.findIndex(
+                p => p.id === data.id
+            );
+
+        if (index === -1) {
+
+            DB.promotions.push(data);
+
+        } else {
+
+            DB.promotions[index] = {
+                ...DB.promotions[index],
+                ...data
+            };
+        }
+
+        saveDB();
+
+        io.emit(
+            'promotionUpdated',
+            index === -1
+                ? data
+                : DB.promotions[index]
+        );
+
+        console.log(
+            '🏆 Промоушн обновлён:',
+            data.name
+        );
+    });
+
+    // ========================================================
+    // БОИ
+    // ========================================================
+
+    socket.on('fightScheduled', (data) => {
+
+        io.emit(
+            'fightScheduled',
+            data
+        );
+
+        console.log(
+            '⚔️ Бой назначен:',
+            data.fight
+                ? data.fight.id
+                : 'unknown'
+        );
+    });
+
+    socket.on('fightStarted', (data) => {
+
+        io.emit(
+            'fightStarted',
+            data
+        );
+
+        console.log(
+            '🥊 Бой начался:',
+            data.id
+        );
+    });
+
+    socket.on('fightUpdate', (data) => {
+
+        io.emit(
+            'fightUpdate',
+            data
+        );
+    });
+
+    socket.on('fightFinished', (data) => {
+
+        io.emit(
+            'fightFinished',
+            data
+        );
+
+        console.log(
+            '🏆 Бой завершён:',
+            data.id
+        );
+    });
+
+    // ========================================================
+    // ПОЛНАЯ ОЧИСТКА У ВСЕХ
+    // ========================================================
+
+    socket.on('globalCleanup', () => {
+
+        console.log(
+            '💀 ПОЛНАЯ ОЧИСТКА ЗАПУЩЕНА:',
+            socket.id
+        );
+
+        DB = {
+            fighters: [],
+            promotions: [],
+            events: []
+        };
+
+        saveDB();
+
+        // ВАЖНО:
+        // отправляем всем подключённым игрокам
+        // новое пустое состояние
+        io.emit('globalCleanup');
+
+        io.emit('serverState', {
+            fighters: [],
+            promotions: [],
+            events: [],
+            onlineCount: onlinePlayers.size
+        });
+
+        console.log(
+            '💀 ВСЕ ДАННЫЕ УДАЛЕНЫ У ВСЕХ'
+        );
+    });
+
+    // ========================================================
+    // ОТКЛЮЧЕНИЕ
+    // ========================================================
+
+    socket.on('disconnect', () => {
+
+        const name =
+            onlinePlayers.get(socket.id);
+
+        onlinePlayers.delete(
+            socket.id
+        );
+
+        io.emit('playerLeft', {
+            name: name || 'Игрок',
+            onlineCount: onlinePlayers.size
+        });
+
+        console.log(
+            '🔌 Отключился:',
+            name || socket.id
+        );
+    });
+});
+
+// ============================================================
+// АВТОСОХРАНЕНИЕ
+// ============================================================
+
+setInterval(() => {
+    saveDB();
+}, 30000);
+
+// ============================================================
+// ЗАПУСК
+// ============================================================
+
+server.listen(PORT, () => {
+
+    console.log(
+        '🚀 Promotion Simulator запущен!'
+    );
+
+    console.log(
+        '🌐 http://localhost:' + PORT
+    );
+});
