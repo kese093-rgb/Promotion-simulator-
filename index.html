@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Promotion Simulator</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<!-- ============================================================
+     ГЛАВНОЕ МЕНЮ
+============================================================ -->
+<div id="menu" class="screen active">
+    <div class="container">
+
+        <header class="main-header">
+            <div>
+                <h1>🥊 PROMOTION SIMULATOR</h1>
+                <p>Создай бойца. Вступи в промоушн. Построй карьеру.</p>
+            </div>
+
+            <div id="online-count" class="online-count">
+                0 онлайн
+            </div>
+        </header>
+
+        <!-- Кнопки меню -->
+        <div class="menu-grid">
+
+            <button
+                id="btn-create-fighter"
+                class="menu-card"
+                onclick="showScreen('create-fighter')">
+                <span class="menu-icon">👤</span>
+                <strong>Создать бойца</strong>
+                <small>Создай своего бойца</small>
+            </button>
+
+            <button
+                class="menu-card"
+                onclick="loadFighter()">
+                <span class="menu-icon">💾</span>
+                <strong>Мои бойцы</strong>
+                <small>Выбрать сохранённого бойца</small>
+            </button>
+
+            <button
+                class="menu-card"
+                onclick="showPromotionsList()">
+                <span class="menu-icon">🏆</span>
+                <strong>Промоушны</strong>
+                <small>Смотреть доступные организации</small>
+            </button>
+
+            <button
+                class="menu-card"
+                onclick="showPromotionCodeForm()">
+                <span class="menu-icon">🏢</span>
+                <strong>Создать промоушн</strong>
+                <small>Создай собственную организацию</small>
+            </button>
+
+        </div>
+
+        <!-- Слоты бойцов -->
+        <div id="save-slots" class="save-slots"></div>
+
+        <!-- DEV -->
+        <div class="dev-panel">
+            <h3>🛠 DEV MODE</h3>
+            <p>Инструменты разработки</p>
+
+            <button
+                class="btn btn-danger"
+                onclick="globalCleanup()">
+                💀 ПОЛНАЯ ОЧИСТКА ВСЕГО У ВСЕХ
+            </button>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- ============================================================
+     СОЗДАНИЕ БОЙЦА
+============================================================ -->
+<div id="create-fighter" class="screen">
+    <div class="form-container">
+
+        <h2>👤 СОЗДАНИЕ БОЙЦА</h2>
+
+        <div class="form-grid">
+
+            <div class="form-group">
+                <label>Имя</label>
+                <input
+                    id="f-name"
+                    type="text"
+                    placeholder="Имя">
+            </div>
+
+            <div class="form-group">
+                <label>Фамилия</label>
+                <input
+                    id="f-surname"
+                    type="text"
+                    placeholder="Фамилия">
+            </div>
+
+            <div class="form-group">
+                <label>Прозвище</label>
+                <input
+                    id="f-nickname"
+                    type="text"
+                    placeholder="The Beast">
+            </div>
+
+            <div class="form-group">
+                <label>Возраст</label>
+                <input
+                    id="f-age"
+                    type="number"
+                    min="18"
+                    max="60"
+                    value="25">
+            </div>
+
+            <div class="form-group">
+                <label>Страна</label>
+                <input
+                    id="f-country"
+                    type="text"
+                    placeholder="Россия">
+            </div>
+
+            <div class="form-group">
+                <label>Базовый стиль</label>
+
+                <select id="f-style">
+                    <option value="Боксёр">Боксёр</option>
+                    <option value="Борец">Борец</option>
+                    <option value="Грэпплер">Грэпплер</option>
+                    <option value="Кикбоксер">Кикбоксер</option>
+                    <option value="MMA">MMA</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Дивизион</label>
+
+                <select id="f-division">
+                    <option value="Легкий">Легкий</option>
+                    <option value="Средний">Средний</option>
+                    <option value="Тяжелый">Тяжелый</option>
+                </select>
+            </div>
+
+        </div>
+
+        <div class="form-actions">
+
+            <button
+                class="btn btn-green"
+                onclick="createFighter()">
+                👊 Создать бойца
+            </button>
+
+            <button
+                class="btn btn-back"
+                onclick="showScreen('menu')">
+                ← Назад
+            </button>
+
+        </div>
+
+    </div>
+</div>
+
+
+<!-- ============================================================
+     КОД СОЗДАНИЯ ПРОМОУШНА
+============================================================ -->
+<div id="promotion-code-form" class="screen">
+
+    <div class="form-container">
+
+        <h2>🔐 КОД СОЗДАНИЯ ПРОМОУШНА</h2>
+
+        <p class="text-muted">
+            Введите код для создания собственного промоушна.
+        </p>
+
+        <div class="form-group">
+            <label>Код</label>
+
+            <input
+                id="promo-code-input"
+                type="text"
+                placeholder="Введите код">
+        </div>
+
+        <div class="form-actions">
+
+            <button
+                class="btn btn-gold"
+                onclick="checkPromotionCode()">
+                🔓 Проверить код
+            </button>
+
+            <button
+                class="btn btn-back"
+                onclick="showScreen('menu')">
+                ← Назад
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     СОЗДАНИЕ ПРОМОУШНА
+============================================================ -->
+<div id="promotion-create-form" class="screen">
+
+    <div class="form-container">
+
+        <h2>🏢 СОЗДАНИЕ ПРОМОУШНА</h2>
+
+        <div class="form-group">
+            <label>Название промоушна</label>
+
+            <input
+                id="promo-name"
+                type="text"
+                placeholder="Например: UFC">
+        </div>
+
+        <div class="form-group">
+            <label>Страна</label>
+
+            <input
+                id="promo-country"
+                type="text"
+                placeholder="США">
+        </div>
+
+        <div class="info-card">
+            <strong>Доступные дивизионы:</strong>
+
+            <p>
+                🥊 Легкий<br>
+                🥊 Средний<br>
+                🥊 Тяжелый
+            </p>
+        </div>
+
+        <div class="form-actions">
+
+            <button
+                class="btn btn-gold"
+                onclick="createPromotion()">
+                🏆 Создать промоушн
+            </button>
+
+            <button
+                class="btn btn-back"
+                onclick="showScreen('menu')">
+                ← Назад
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     СПИСОК ПРОМОУШНОВ
+============================================================ -->
+<div id="promotions-list" class="screen">
+
+    <div class="container">
+
+        <div class="page-header">
+            <div>
+                <h2>🏆 ПРОМОУШНЫ</h2>
+                <p class="text-muted">
+                    Все доступные промоушны
+                </p>
+            </div>
+
+            <button
+                class="btn btn-back"
+                onclick="showScreen('menu')">
+                ← В меню
+            </button>
+        </div>
+
+        <div id="promotions-grid" class="stat-grid"></div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     ДЕТАЛИ ПРОМОУШНА
+============================================================ -->
+<div id="promotion-detail" class="screen">
+
+    <div class="container">
+
+        <div class="page-header">
+
+            <div>
+                <h2 id="promo-detail-title">
+                    🏆 Промоушн
+                </h2>
+
+                <p
+                    id="promo-detail-sport"
+                    class="text-muted">
+                </p>
+            </div>
+
+            <button
+                class="btn btn-back"
+                onclick="showPromotionsList()">
+                ← К промоушнам
+            </button>
+
+        </div>
+
+        <div
+            id="promo-detail-actions"
+            class="action-row">
+        </div>
+
+        <div
+            id="promo-detail-content"
+            class="content-area">
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     ДАШБОРД БОЙЦА
+============================================================ -->
+<div id="fighter-dashboard" class="screen">
+
+    <div class="dashboard">
+
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+
+            <div class="card-mini">
+
+                <div style="font-size:32px;">
+                    👤
+                </div>
+
+                <div
+                    style="font-weight:bold;"
+                    id="dash-name">
+                </div>
+
+                <div
+                    style="color:var(--text2);font-size:12px;"
+                    id="dash-info">
+                </div>
+
+            </div>
+
+            <button
+                class="nav-btn active"
+                onclick="showFighterTab('profile')">
+                👤 Профиль
+            </button>
+
+            <button
+                class="nav-btn"
+                onclick="showFighterTab('promotions')">
+                🏆 Мой промоушн
+            </button>
+
+            <button
+                class="nav-btn"
+                onclick="showFighterTab('upcoming')">
+                📅 Бои
+            </button>
+
+            <button
+                class="nav-btn btn-danger"
+                onclick="deleteFighter()">
+                🗑 Удалить бойца
+            </button>
+
+            <button
+                class="nav-btn menu-back"
+                onclick="showScreen('menu')">
+                ← В меню
+            </button>
+
+        </div>
+
+        <!-- CONTENT -->
+        <div
+            class="main-content"
+            id="fighter-content">
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     ЭКРАН БОЯ
+============================================================ -->
+<div id="fight-screen" class="screen">
+
+    <div class="fight-container">
+
+        <h2 class="fight-title">
+            ⚔️ БОЙ
+        </h2>
+
+        <div
+            id="fight-header"
+            class="fight-header">
+
+            <div
+                id="fighter1-name"
+                class="fight-fighter-name">
+            </div>
+
+            <div class="fight-vs">
+                VS
+            </div>
+
+            <div
+                id="fighter2-name"
+                class="fight-fighter-name">
+            </div>
+
+        </div>
+
+        <!-- ЛОГ БОЯ -->
+        <div
+            id="fight-log"
+            class="fight-log">
+        </div>
+
+        <!-- СЧЁТ -->
+        <div
+            id="fight-score"
+            class="fight-score">
+        </div>
+
+        <!-- РЕЗУЛЬТАТ -->
+        <div
+            id="fight-result"
+            class="fight-result"
+            style="display:none;">
+
+            <h3>
+                🏆 РЕЗУЛЬТАТ БОЯ
+            </h3>
+
+            <p
+                id="fight-result-text"
+                class="fight-result-text">
+            </p>
+
+            <p
+                id="fight-final-score"
+                class="fight-final-score">
+            </p>
+
+        </div>
+
+        <button
+            class="btn btn-back"
+            onclick="closeFightScreen()">
+            ← Закрыть
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     УВЕДОМЛЕНИЯ
+============================================================ -->
+<div
+    id="notification-container"
+    class="notification-container">
+</div>
+
+
+<!-- ============================================================
+     SOCKET.IO
+============================================================ -->
+<script src="/socket.io/socket.io.js"></script>
+
+
+<!-- ============================================================
+     ИГРОВЫЕ МОДУЛИ
+============================================================ -->
+
+<!-- Мультиплеер -->
+<script src="multiplayer.js"></script>
+
+<!-- Бои -->
+<script src="fights.js"></script>
+
+<!-- Основная логика -->
+<script src="game.js"></script>
+
+
+</body>
+</html>
