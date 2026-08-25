@@ -1,0 +1,448 @@
+function checkForFight() {
+    if (isFightActive) return;
+
+    var now = new Date();
+
+    for (var i = 0; i < allPromotions.length; i++) {
+        var promo = allPromotions[i];
+
+        if (!promo.fights) continue;
+
+        for (var j = 0; j < promo.fights.length; j++) {
+            var fight = promo.fights[j];
+
+            if (fight.status === 'scheduled') {
+                var fightTime = new Date(fight.scheduledTime);
+
+                if (fightTime <= now) {
+                    startFight(fight);
+                    return;
+                }
+            }
+        }
+    }
+}
+
+function startFight(fight) {
+    if (isFightActive) return;
+
+    isFightActive = true;
+    fightFinished = false;
+
+    fight.status = 'in_progress';
+    fight.comments = [];
+    fight.roundScores = [];
+    fight.totalAttacks = {
+        fighter1: 0,
+        fighter2: 0
+    };
+    fight.currentRound = 1;
+    fight.roundAttacks = {
+        fighter1: 0,
+        fighter2: 0
+    };
+
+    var promo = allPromotions.find(function(p) {
+        return p.id === fight.promotionId;
+    });
+
+    if (promo) {
+        socket.emit('updatePromotion', promo);
+    }
+
+    currentFight = fight;
+
+    showFightScreen(fight);
+    socket.emit('fightStarted', fight);
+
+    var f1 = fight.fighter1Name;
+    var f2 = fight.fighter2Name;
+
+    var allComments = [];
+    var allAttacks = {
+        fighter1: 0,
+        fighter2: 0
+    };
+
+    for (var round = 1; round <= 3; round++) {
+        var roundComments = [];
+        var f1Attacks = 0;
+        var f2Attacks = 0;
+
+        for (var m = 0; m < 5; m++) {
+            var comment = generateFightComment(f1, f2, round, m);
+
+            var attacker =
+                Math.random() > 0.5
+                    ? 'fighter1'
+                    : 'fighter2';
+
+            if (attacker === 'fighter1') {
+                f1Attacks++;
+                allAttacks.fighter1++;
+            } else {
+                f2Attacks++;
+                allAttacks.fighter2++;
+            }
+
+            roundComments.push({
+                text: comment,
+                attacker: attacker
+            });
+        }
+
+        var roundScore =
+            calculateRoundScore(f1Attacks, f2Attacks);
+
+        fight.roundScores.push(roundScore);
+
+        allComments.push({
+            text: '🔴 РАУНД ' + round + ' НАЧАЛСЯ!',
+            attacker: null
+        });
+
+        for (var c = 0; c < roundComments.length; c++) {
+            allComments.push(roundComments[c]);
+        }
+
+        allComments.push({
+            text:
+                '📊 Счёт ' +
+                round +
+                ' раунда: ' +
+                roundScore.fighter1 +
+                '-' +
+                roundScore.fighter2 +
+                ' (' +
+                f1Attacks +
+                '-' +
+                f2Attacks +
+                ' успешных атак)',
+            attacker: null,
+            isScore: true,
+            roundScore: roundScore
+        });
+    }
+
+    var totalScore1 = 0;
+    var totalScore2 = 0;
+
+    for (var s = 0; s < fight.roundScores.length; s++) {
+        totalScore1 += fight.roundScores[s].fighter1;
+        totalScore2 += fight.roundScores[s].fighter2;
+    }
+
+    var winner =
+        totalScore1 > totalScore2
+            ? fight.fighter1Id
+            : totalScore2 > totalScore1
+                ? fight.fighter2Id
+                : null;
+
+    allComments.push({
+        text: '🏆 БОЙ ЗАВЕРШЁН!',
+        attacker: null,
+        isFinal: true
+    });
+
+    if (winner === fight.fighter1Id) {
+        allComments.push({
+            text:
+                '🥇 Победитель: ' +
+                f1 +
+                '! Общий счёт ' +
+                totalScore1 +
+                '-' +
+                totalScore2,
+            attacker: null,
+            isFinal: true
+        });
+    } else if (winner === fight.fighter2Id) {
+        allComments.push({
+            text:
+                '🥇 Победитель: ' +
+                f2 +
+                '! Общий счёт ' +
+                totalScore1 +
+                '-' +
+                totalScore2,
+            attacker: null,
+            isFinal: true
+        });
+    } else {
+        allComments.push({
+            text:
+                '🤝 Ничья! Общий счёт ' +
+                totalScore1 +
+                '-' +
+                totalScore2,
+            attacker: null,
+            isFinal: true
+        });
+    }
+
+    fight.result = {
+        winnerId: winner,
+        totalScore: {
+            fighter1: totalScore1,
+            fighter2: totalScore2
+        },
+        roundScores: fight.roundScores,
+        totalAttacks: allAttacks
+    };
+
+    var commentIndex = 0;
+
+    fightInterval = setInterval(function() {
+        if (commentIndex < allComments.length) {
+            var item = allComments[commentIndex];
+
+            if (item.attacker === 'fighter1') {
+                fight.totalAttacks.fighter1++;
+            } else if (item.attacker === 'fighter2') {
+                fight.totalAttacks.fighter2++;
+            }
+
+            fight.comments.push(item.text);
+            updateFightLog(item.text);
+
+            if (item.roundScore) {
+                updateScoreDisplay(item.roundScore);
+            }
+
+            socket.emit('fightUpdate', {
+                id: fight.id,
+                comment: item.text,
+                roundScore: item.roundScore || null
+            });
+
+            commentIndex++;
+        } else {
+            clearInterval(fightInterval);
+            finishFight(fight);
+        }
+    }, 2000);
+}
+
+function generateFightComment(f1, f2, round, moment) {
+    var comments = [
+        f1 + ' выбрасывает джеб!',
+        f2 + ' уклоняется и отвечает кроссом!',
+        f1 + ' лоу-кик в ногу ' + f2 + '!',
+        f2 + ' захватывает и переводит в партер!',
+        f1 + ' защищается, пытается встать.',
+        f2 + ' наносит серию ударов по корпусу!',
+        f1 + ' блокирует и контратакует!',
+        f2 + ' мощный хай-кик!',
+        f1 + ' клинч, колено в корпус!',
+        f2 + ' тейкдаун, ' + f1 + ' внизу!',
+        f1 + ' граунд-энд-паунд!',
+        f2 + ' пытается встать, ' + f1 + ' контролирует!',
+        f1 + ' удар справа, ' + f2 + ' шатается!',
+        f2 + ' отвечает серией из трёх ударов!',
+        f1 + ' лоу-кик, ' + f2 + ' падает!',
+        f2 + ' встаёт! Невероятное восстановление!',
+        f1 + ' перевод в партер, контроль!',
+        f2 + ' пытается сделать сабмишн!',
+        f1 + ' защищается, выходит из опасной позиции!',
+        f2 + ' апперкот в голову!',
+        f1 + ' устал, темп падает.',
+        f2 + ' использует момент, наносит урон!',
+        f1 + ' серия ударов в голову!',
+        f2 + ' блокирует, уходит в сторону.',
+        f1 + ' нокаутирующий удар! Но ' + f2 + ' держится!'
+    ];
+
+    return comments[
+        Math.floor(Math.random() * comments.length)
+    ];
+}
+
+function calculateRoundScore(f1Attacks, f2Attacks) {
+    var diff = f1Attacks - f2Attacks;
+
+    var f1Score = 10;
+    var f2Score = 10;
+
+    if (diff >= 3) {
+        f1Score = 10;
+        f2Score = 7;
+    } else if (diff === 2) {
+        f1Score = 10;
+        f2Score = 8;
+    } else if (diff === 1) {
+        f1Score = 10;
+        f2Score = 9;
+    } else if (diff === -1) {
+        f1Score = 9;
+        f2Score = 10;
+    } else if (diff === -2) {
+        f1Score = 8;
+        f2Score = 10;
+    } else if (diff <= -3) {
+        f1Score = 7;
+        f2Score = 10;
+    }
+
+    return {
+        fighter1: f1Score,
+        fighter2: f2Score
+    };
+}
+
+function showFightScreen(fight) {
+    showScreen('fight-screen');
+
+    document.getElementById('fighter1-name').textContent =
+        fight.fighter1Name;
+
+    document.getElementById('fighter2-name').textContent =
+        fight.fighter2Name;
+
+    document.getElementById('fight-log').innerHTML = '';
+
+    document.getElementById('fight-result').style.display =
+        'none';
+
+    document.getElementById('fight-score').innerHTML = '';
+
+    document.getElementById('fight-header').style.borderColor =
+        'var(--gold)';
+
+    fightFinished = false;
+}
+
+function updateFightLog(comment) {
+    var log = document.getElementById('fight-log');
+
+    var p = document.createElement('p');
+    p.textContent = comment;
+
+    if (
+        comment.includes('🏆') ||
+        comment.includes('🥇')
+    ) {
+        p.style.color = 'var(--gold)';
+        p.style.fontWeight = 'bold';
+        p.style.fontSize = '18px';
+    } else if (comment.includes('🔴')) {
+        p.style.color = 'var(--red)';
+        p.style.fontWeight = 'bold';
+        p.style.fontSize = '16px';
+    } else if (comment.includes('📊')) {
+        p.style.color = 'var(--blue)';
+        p.style.fontWeight = 'bold';
+    }
+
+    log.appendChild(p);
+    log.scrollTop = log.scrollHeight;
+}
+
+function updateScoreDisplay(roundScore) {
+    var scoreDiv =
+        document.getElementById('fight-score');
+
+    scoreDiv.innerHTML =
+        '<div class="score-card">' +
+        '<div class="fighter">' +
+        currentFight.fighter1Name +
+        '</div>' +
+        '<div class="score">' +
+        roundScore.fighter1 +
+        ' - ' +
+        roundScore.fighter2 +
+        '</div>' +
+        '<div class="fighter">' +
+        currentFight.fighter2Name +
+        '</div>' +
+        '</div>';
+}
+
+function finishFight(fight) {
+    if (fightFinished) return;
+
+    fightFinished = true;
+    isFightActive = false;
+
+    clearInterval(fightInterval);
+
+    fight.status = 'finished';
+
+    var f1 = allFighters.find(function(f) {
+        return f.id === fight.fighter1Id;
+    });
+
+    var f2 = allFighters.find(function(f) {
+        return f.id === fight.fighter2Id;
+    });
+
+    if (f1 && f2) {
+        var winnerId = fight.result.winnerId;
+
+        if (winnerId === f1.id) {
+            f1.records.wins++;
+            f1.records.ko =
+                (f1.records.ko || 0) +
+                (Math.random() > 0.5 ? 1 : 0);
+            f2.records.losses++;
+        } else if (winnerId === f2.id) {
+            f2.records.wins++;
+            f2.records.ko =
+                (f2.records.ko || 0) +
+                (Math.random() > 0.5 ? 1 : 0);
+            f1.records.losses++;
+        }
+
+        socket.emit('updateFighter', f1);
+        socket.emit('updateFighter', f2);
+    }
+
+    var promo = allPromotions.find(function(p) {
+        return p.id === fight.promotionId;
+    });
+
+    if (promo) {
+        socket.emit('updatePromotion', promo);
+    }
+
+    saveAllData();
+
+    document.getElementById('fight-result').style.display =
+        'block';
+
+    var winnerName = 'Ничья';
+
+    if (f1 && f2) {
+        if (fight.result.winnerId === f1.id) {
+            winnerName = f1.fullName;
+        } else if (fight.result.winnerId === f2.id) {
+            winnerName = f2.fullName;
+        }
+    }
+
+    document.getElementById('fight-result-text').textContent =
+        '🏆 Победитель: ' + winnerName + '!';
+
+    document.getElementById('fight-final-score').textContent =
+        'Общий счёт: ' +
+        fight.result.totalScore.fighter1 +
+        ' - ' +
+        fight.result.totalScore.fighter2;
+
+    document.getElementById('fight-header').style.borderColor =
+        'var(--gold)';
+
+    socket.emit('fightFinished', fight);
+}
+
+function closeFightScreen() {
+    clearInterval(fightInterval);
+
+    fightInterval = null;
+    currentFight = null;
+    isFightActive = false;
+    fightFinished = false;
+
+    showScreen('fighter-dashboard');
+    showFighterTab('profile');
+          }
