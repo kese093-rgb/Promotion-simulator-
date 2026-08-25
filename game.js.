@@ -1,0 +1,676 @@
+let currentPromotionId = null;
+
+const PROMO_CODE = 'PROMO2026';
+
+function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(function(screen) {
+        screen.classList.remove('active');
+    });
+
+    const screen = document.getElementById(screenId);
+
+    if (screen) {
+        screen.classList.add('active');
+    }
+}
+
+function createFighter() {
+    const name = document.getElementById('f-name').value.trim();
+    const surname = document.getElementById('f-surname').value.trim();
+    const nickname = document.getElementById('f-nickname').value.trim();
+    const age = parseInt(document.getElementById('f-age').value);
+    const country = document.getElementById('f-country').value.trim();
+    const baseStyle = document.getElementById('f-style').value;
+    const division = document.getElementById('f-division').value;
+
+    if (!name || !surname || !country) {
+        alert('Заполните все обязательные поля!');
+        return;
+    }
+
+    const fighter = {
+        id: 'fighter_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        fullName: name + ' ' + surname,
+        nickname: nickname,
+        age: age,
+        country: country,
+        baseStyle: baseStyle,
+        division: division,
+
+        boxing: 50,
+        wrestling: 50,
+        submission: 50,
+        kick: 50,
+        speed: 50,
+        stamina: 50,
+        strength: 50,
+
+        energy: 100,
+        maxEnergy: 100,
+
+        prime: 50,
+        maxPrime: 100,
+
+        hype: 0,
+        maxHype: 100,
+
+        records: {
+            wins: 0,
+            losses: 0,
+            ko: 0
+        },
+
+        currentPromotionId: null
+    };
+
+    socket.emit('createFighter', fighter);
+
+    myFighter = fighter;
+
+    alert('✅ Боец ' + fighter.fullName + ' создан!');
+
+    document.getElementById('f-name').value = '';
+    document.getElementById('f-surname').value = '';
+    document.getElementById('f-nickname').value = '';
+    document.getElementById('f-country').value = '';
+
+    showScreen('fighter-dashboard');
+    showFighterTab('profile');
+}
+
+function deleteFighter() {
+    if (!myFighter) {
+        alert('Боец не найден!');
+        return;
+    }
+
+    if (!confirm('Удалить бойца "' + myFighter.fullName + '"?')) {
+        return;
+    }
+
+    socket.emit('deleteFighter', {
+        playerId: myPlayerId
+    });
+
+    allFighters = allFighters.filter(function(f) {
+        return f.ownerId !== myPlayerId;
+    });
+
+    myFighter = null;
+
+    updateSaveSlots();
+    showScreen('menu');
+
+    alert('🗑 Боец удалён!');
+}
+
+function showPromotionCodeForm() {
+    if (promotionCodeUsed) {
+        alert('❌ Вы уже использовали код для создания промоушна.');
+        return;
+    }
+
+    showScreen('promotion-code-form');
+}
+
+function checkPromotionCode() {
+    const code = document.getElementById('promo-code-input').value.trim();
+
+    if (code === PROMO_CODE) {
+        promotionCodeUsed = true;
+
+        document.getElementById('promo-code-input').value = '';
+
+        showScreen('promotion-create-form');
+    } else {
+        alert('❌ Неверный код!');
+    }
+}
+
+function createPromotion() {
+    const name = document.getElementById('promo-name').value.trim();
+    const country = document.getElementById('promo-country').value.trim();
+
+    if (!name || !country) {
+        alert('Заполните все поля!');
+        return;
+    }
+
+    const newPromo = {
+        id: 'promo_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        name: name,
+        country: country,
+
+        divisions: [
+            'Легкий',
+            'Средний',
+            'Тяжелый'
+        ],
+
+        ownerId: myPlayerId,
+        roster: [],
+        fights: [],
+        createdAt: new Date().toISOString()
+    };
+
+    allPromotions.push(newPromo);
+
+    socket.emit('updatePromotion', newPromo);
+
+    document.getElementById('promo-name').value = '';
+    document.getElementById('promo-country').value = '';
+
+    alert('✅ Промоушн "' + name + '" создан!');
+
+    showScreen('menu');
+}
+
+function showPromotionsList() {
+    showScreen('promotions-list');
+    renderPromotionsList();
+}
+
+function renderPromotionsList() {
+    const container = document.getElementById('promotions-grid');
+
+    if (!container) return;
+
+    if (allPromotions.length === 0) {
+        container.innerHTML =
+            '<p style="color:var(--text2);">Нет промоушнов.</p>';
+        return;
+    }
+
+    let html = '';
+
+    allPromotions.forEach(function(promo) {
+        const fighters = allFighters.filter(function(f) {
+            return f.currentPromotionId === promo.id;
+        });
+
+        const isOwner = promo.ownerId === myPlayerId;
+        const isMyPromo =
+            myFighter &&
+            myFighter.currentPromotionId === promo.id;
+
+        html += `
+            <div class="stat-card clickable"
+                 onclick="showPromotionDetail('${promo.id}')">
+
+                <h3>
+                    ${isMyPromo ? '✅ ' : ''}
+                    ${promo.name}
+                    ${isOwner ? ' 👑' : ''}
+                </h3>
+
+                <p>
+                    ${promo.country}
+                    |
+                    ${promo.divisions.join(', ')}
+                </p>
+
+                <p style="color:var(--text2);">
+                    Бойцов: ${fighters.length}
+                </p>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function showPromotionDetail(promoId) {
+    currentPromotionId = promoId;
+
+    showScreen('promotion-detail');
+
+    renderPromotionDetail(promoId);
+}
+
+function renderPromotionDetail(promoId) {
+    const promo = allPromotions.find(function(p) {
+        return p.id === promoId;
+    });
+
+    if (!promo) return;
+
+    document.getElementById('promo-detail-title').textContent =
+        '🏆 ' + promo.name;
+
+    document.getElementById('promo-detail-sport').textContent =
+        promo.country +
+        ' | Владелец: ' +
+        (promo.ownerId === myPlayerId ? 'Вы' : 'Другой игрок');
+
+    const actions = document.getElementById('promo-detail-actions');
+
+    let html = '';
+
+    const isInPromo =
+        myFighter &&
+        myFighter.currentPromotionId === promoId;
+
+    const isOwner = promo.ownerId === myPlayerId;
+
+    if (myFighter && !isInPromo) {
+        html += `
+            <button class="btn btn-green btn-small"
+                    onclick="joinPromotion('${promoId}')">
+                📝 Вступить
+            </button>
+        `;
+    }
+
+    if (isInPromo) {
+        html += `
+            <button class="btn btn-danger btn-small"
+                    onclick="leavePromotion('${promoId}')">
+                🚪 Покинуть
+            </button>
+        `;
+    }
+
+    if (isOwner) {
+        html += `
+            <button class="btn btn-gold btn-small"
+                    onclick="showAddFightForm('${promoId}')">
+                ⚔️ Добавить бой
+            </button>
+
+            <button class="btn btn-danger btn-small"
+                    onclick="deletePromotionCompletely('${promoId}')">
+                🗑 Удалить промоушн
+            </button>
+        `;
+    }
+
+    html += `
+        <button class="btn btn-blue btn-small"
+                onclick="showPromotionRanking('${promoId}')">
+            🏆 Рейтинг
+        </button>
+    `;
+
+    actions.innerHTML = html;
+
+    showPromotionRanking(promoId);
+}
+
+function joinPromotion(promoId) {
+    if (!myFighter) {
+        alert('Сначала создайте бойца!');
+        return;
+    }
+
+    const promo = allPromotions.find(function(p) {
+        return p.id === promoId;
+    });
+
+    if (!promo) return;
+
+    if (promo.divisions.indexOf(myFighter.division) === -1) {
+        alert(
+            'Ваш дивизион не подходит для этого промоушна!'
+        );
+        return;
+    }
+
+    myFighter.currentPromotionId = promoId;
+
+    if (!promo.roster) {
+        promo.roster = [];
+    }
+
+    if (promo.roster.indexOf(myFighter.id) === -1) {
+        promo.roster.push(myFighter.id);
+    }
+
+    socket.emit('updateFighter', myFighter);
+    socket.emit('updatePromotion', promo);
+
+    alert(
+        '✅ ' +
+        myFighter.fullName +
+        ' вступил в ' +
+        promo.name +
+        '!'
+    );
+
+    renderPromotionDetail(promoId);
+}
+
+function leavePromotion(promoId) {
+    if (!myFighter) return;
+
+    const promo = allPromotions.find(function(p) {
+        return p.id === promoId;
+    });
+
+    if (!promo) return;
+
+    if (promo.roster) {
+        promo.roster = promo.roster.filter(function(id) {
+            return id !== myFighter.id;
+        });
+    }
+
+    myFighter.currentPromotionId = null;
+
+    socket.emit('updateFighter', myFighter);
+    socket.emit('updatePromotion', promo);
+
+    renderPromotionDetail(promoId);
+
+    alert('Вы покинули ' + promo.name);
+}
+
+function deletePromotionCompletely(promoId) {
+    const promo = allPromotions.find(function(p) {
+        return p.id === promoId;
+    });
+
+    if (!promo) return;
+
+    if (promo.ownerId !== myPlayerId) {
+        alert('❌ Только владелец может удалить промоушн!');
+        return;
+    }
+
+    if (!confirm('Удалить "' + promo.name + '"?')) {
+        return;
+    }
+
+    allFighters.forEach(function(fighter) {
+        if (fighter.currentPromotionId === promoId) {
+            fighter.currentPromotionId = null;
+            socket.emit('updateFighter', fighter);
+        }
+    });
+
+    allPromotions = allPromotions.filter(function(p) {
+        return p.id !== promoId;
+    });
+
+    socket.emit('updatePromotion', {
+        id: promoId,
+        deleted: true
+    });
+
+    showPromotionsList();
+
+    alert('✅ Промоушн удалён!');
+}
+
+function showPromotionRanking(promoId) {
+    const promo = allPromotions.find(function(p) {
+        return p.id === promoId;
+    });
+
+    if (!promo) return;
+
+    const container =
+        document.getElementById('promo-detail-content');
+
+    let html = '<h3>🏆 Рейтинг</h3>';
+
+    promo.divisions.forEach(function(division) {
+        let fighters = allFighters.filter(function(f) {
+            return (
+                f.currentPromotionId === promoId &&
+                f.division === division
+            );
+        });
+
+        fighters.sort(function(a, b) {
+            return (b.hype || 0) - (a.hype || 0);
+        });
+
+        html += `
+            <h4 style="color:var(--gold);">
+                📋 ${division} дивизион
+            </h4>
+        `;
+
+        if (fighters.length === 0) {
+            html += `
+                <p style="color:var(--text2);">
+                    Нет бойцов
+                </p>
+            `;
+            return;
+        }
+
+        fighters.slice(0, 15).forEach(function(f, index) {
+            const medal =
+                index === 0 ? '🥇 ' :
+                index === 1 ? '🥈 ' :
+                index === 2 ? '🥉 ' : '';
+
+            html += `
+                <div class="stat-card">
+                    <h3>
+                        ${medal}#${index + 1}
+                        ${f.fullName}
+                    </h3>
+
+                    <p>
+                        ${f.baseStyle}
+                        |
+                        Рекорд:
+                        ${f.records.wins}-${f.records.losses}-${f.records.ko}KO
+                    </p>
+
+                    <p style="color:var(--text2);">
+                        Хайп: ${f.hype || 0}
+                    </p>
+                </div>
+            `;
+        });
+    });
+
+    container.innerHTML = html;
+}
+
+function showFighterTab(tab) {
+    const c = document.getElementById('fighter-content');
+
+    if (!myFighter) {
+        c.innerHTML =
+            '<p>Боец не найден.</p>';
+        return;
+    }
+
+    const f = myFighter;
+
+    if (tab === 'profile') {
+        let promoName = 'Без промоушна';
+
+        if (f.currentPromotionId) {
+            const promo = allPromotions.find(function(p) {
+                return p.id === f.currentPromotionId;
+            });
+
+            if (promo) promoName = promo.name;
+        }
+
+        c.innerHTML = `
+            <h2>👤 ${f.fullName}</h2>
+
+            <p style="color:var(--text2);">
+                ${f.country} |
+                ${f.division} |
+                ${f.baseStyle} |
+                ${promoName}
+            </p>
+
+            <div class="stat-grid">
+
+                <div class="stat-card">
+                    <h3>⚡ Энергия</h3>
+                    <div class="stat-value">
+                        ${f.energy}/${f.maxEnergy}
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <h3>🔥 Прайм</h3>
+                    <div class="stat-value">
+                        ${f.prime}/${f.maxPrime}
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <h3>📢 Хайп</h3>
+                    <div class="stat-value">
+                        ${f.hype}/${f.maxHype}
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <h3>🏆 Рекорд</h3>
+                    <div class="stat-value">
+                        ${f.records.wins}W -
+                        ${f.records.losses}L -
+                        ${f.records.ko}KO
+                    </div>
+                </div>
+
+            </div>
+
+            <h3>Навыки</h3>
+
+            <div class="stat-grid">
+                <div class="stat-card">
+                    Бокс
+                    <div class="stat-value">${f.boxing}</div>
+                </div>
+
+                <div class="stat-card">
+                    Борьба
+                    <div class="stat-value">${f.wrestling}</div>
+                </div>
+
+                <div class="stat-card">
+                    Самбишн
+                    <div class="stat-value">${f.submission}</div>
+                </div>
+
+                <div class="stat-card">
+                    Удары ногами
+                    <div class="stat-value">${f.kick}</div>
+                </div>
+
+                <div class="stat-card">
+                    Скорость
+                    <div class="stat-value">${f.speed}</div>
+                </div>
+
+                <div class="stat-card">
+                    Выносливость
+                    <div class="stat-value">${f.stamina}</div>
+                </div>
+
+                <div class="stat-card">
+                    Сила
+                    <div class="stat-value">${f.strength}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    if (tab === 'promotions') {
+        if (f.currentPromotionId) {
+            const promo = allPromotions.find(function(p) {
+                return p.id === f.currentPromotionId;
+            });
+
+            if (promo) {
+                c.innerHTML = `
+                    <h2>🏆 ${promo.name}</h2>
+
+                    <p>
+                        ${promo.country}
+                    </p>
+
+                    <button class="btn btn-blue"
+                            onclick="showPromotionDetail('${promo.id}')">
+                        📋 Перейти
+                    </button>
+                `;
+            }
+        } else {
+            c.innerHTML = `
+                <h2>🏆 Мой промоушн</h2>
+                <p>Вы не состоите в промоушне.</p>
+
+                <button class="btn btn-blue"
+                        onclick="showPromotionsList()">
+                    📋 Смотреть промоушны
+                </button>
+            `;
+        }
+    }
+
+    if (tab === 'upcoming') {
+        let fights = [];
+
+        allPromotions.forEach(function(promo) {
+            (promo.fights || []).forEach(function(fight) {
+                if (
+                    fight.fighter1Id === f.id ||
+                    fight.fighter2Id === f.id
+                ) {
+                    if (
+                        fight.status === 'scheduled' ||
+                        fight.status === 'in_progress'
+                    ) {
+                        fights.push(fight);
+                    }
+                }
+            });
+        });
+
+        let html = '<h2>📅 Предстоящие бои</h2>';
+
+        if (fights.length === 0) {
+            html += '<p>Назначенных боёв нет.</p>';
+        }
+
+        fights.forEach(function(fight) {
+            const opponent =
+                fight.fighter1Id === f.id
+                    ? fight.fighter2Name
+                    : fight.fighter1Name;
+
+            html += `
+                <div class="stat-card">
+                    <h3>
+                        ⚔️ ${f.fullName} VS ${opponent}
+                    </h3>
+
+                    <p>
+                        ${fight.division}
+                    </p>
+
+                    <p>
+                        ${new Date(
+                            fight.scheduledTime
+                        ).toLocaleString()}
+                    </p>
+                </div>
+            `;
+        });
+
+        c.innerHTML = html;
+    }
+}
+
+function showFighterDashboard() {
+    showScreen('fighter-dashboard');
+    showFighterTab('profile');
+}
+
+window.addEventListener('load', function() {
+    updateSaveSlots();
+    updateButtons();
+});
